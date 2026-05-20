@@ -189,19 +189,19 @@ int main(void){
 단어 주석 "`" 이용
 "`Hello world`"
 
-* 큰 따움표(") 없이 사용하세요.
+* 큰 따옴표(") 없이 사용하세요.
 ``` 
 <br />
 
 ### 4.5. 링크 Link
 ```
 [Title](link)
-[부산대 소프트웨어융합교육원](https://swedu.pusan.ac.kr/swedu/index.do)
+[부산대학교 AI융합교육원](https://swedu.pusan.ac.kr/swedu/index.do)
 
 <link>
 <https://swedu.pusan.ac.kr>
 ``` 
-[부산대 소프트웨어융합교육원](https://swedu.pusan.ac.kr)
+[부산대학교 AI융합교육원](https://swedu.pusan.ac.kr)
 
 <https://swedu.pusan.ac.kr>  
 <br />
@@ -212,7 +212,8 @@ int main(void){
 _single underscores_
 **double asterisks**
 __double underscores__
-~~cancelline~~
+~~cancelline~~<img width="1994" height="253" alt="KakaoTalk_20260520_160616446_01" src="https://github.com/user-attachments/assets/9269b8bd-7539-4120-a97c-705f96fd5e71" />
+
 ```
 *single asterisks* <br />
 _single underscores_ <br />
@@ -226,7 +227,7 @@ __double underscores__ <br />
 <img src="/path/to/img.jpg" width="600px" title="Title" alt="Alt text"></img>
 ![Alt text](/path/to/img.jpg "Optional title")
 ```
-<img src="https://github.com/pnuswedu/SW-Hackathon-2024/assets/34933690/be7beb64-490f-4480-b121-f25cde7f2a8d" width="600px" title="부산대학교 소프트웨어융합교육원" alt="부산대학교 소프트웨어융합교육원"></img>
+<img src="https://github.com/user-attachments/assets/3c717ecf-6e22-487b-ae12-72d11e8af5ff" width="600px" title="부산대학교 AI융합교육원" alt="부산대학교 AI융합교육원"></img>
 <br/>
-![부산대학교 소프트웨어융합교육원](https://github.com/pnuswedu/SW-Hackathon-2024/assets/34933690/884154bb-28f6-4498-9f64-a8a878972951, "부산대학교 소프트웨어융합교육원")
+![부산대학교 AI융합교육원](https://github.com/user-attachments/assets/3c717ecf-6e22-487b-ae12-72d11e8af5ff "부산대학교 AI융합교육원")
 <br/>
