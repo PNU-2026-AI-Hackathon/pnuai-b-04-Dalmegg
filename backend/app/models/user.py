@@ -22,3 +22,5 @@ class User(Base):
     )
 
     shops = relationship("Shop", back_populates="owner")
+    reviews = relationship("Review", back_populates="user")
+    favorites = relationship("Favorite", back_populates="user")

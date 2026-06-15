@@ -6,18 +6,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
-class Shop(Base):
-    __tablename__ = "shop"
+class Flower(Base):
+    __tablename__ = "flower"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, index=True)
+    shop_id: Mapped[int] = mapped_column(ForeignKey("shop.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
-    region: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
-    address: Mapped[str] = mapped_column(String(255), nullable=False)
-    phone: Mapped[str | None] = mapped_column(String(40))
     description: Mapped[str | None] = mapped_column(Text)
-    average_rating: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
-    review_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    color: Mapped[str | None] = mapped_column(String(60))
+    price: Mapped[float] = mapped_column(Float, nullable=False)
+    image_url: Mapped[str | None] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -28,6 +26,6 @@ class Shop(Base):
         nullable=False,
     )
 
-    owner = relationship("User", back_populates="shops")
-    flowers = relationship("Flower", back_populates="shop")
-    reviews = relationship("Review", back_populates="shop")
+    shop = relationship("Shop", back_populates="flowers")
+    stock = relationship("FlowerStock", back_populates="flower", uselist=False)
+    favorites = relationship("Favorite", back_populates="flower")
