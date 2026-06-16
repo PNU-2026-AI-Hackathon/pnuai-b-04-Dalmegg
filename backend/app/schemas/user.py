@@ -14,5 +14,6 @@ class UserRead(BaseModel):
     is_active: bool
     accumulated_eggshell_kg: float
     saved_co2_kg: float
+    reward_points: int
 
     model_config = ConfigDict(from_attributes=True)
