@@ -1,10 +1,22 @@
-async def register_and_login(client, email: str, password: str = "strong-password", is_admin: bool = False) -> str:
+async def register_user_and_login(client, email: str, password: str = "strong-password") -> str:
     await client.post(
         "/api/auth/register",
-        json={"email": email, "password": password, "is_admin": is_admin},
+        json={"email": email, "password": password},
     )
     response = await client.post(
         "/api/auth/login",
+        json={"email": email, "password": password},
+    )
+    return response.json()["access_token"]
+
+
+async def register_admin_and_login(client, email: str, password: str = "strong-password") -> str:
+    await client.post(
+        "/api/admin/auth/register",
+        json={"email": email, "password": password},
+    )
+    response = await client.post(
+        "/api/admin/auth/login",
         json={"email": email, "password": password},
     )
     return response.json()["access_token"]

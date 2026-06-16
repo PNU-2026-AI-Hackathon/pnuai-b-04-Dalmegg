@@ -2,7 +2,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token, verify_password
+from app.crud.admin_user import get_admin_by_email
 from app.crud.user import get_user_by_email
+from app.models.admin_user import AdminUser
 from app.models.user import User
 
 
@@ -20,4 +22,21 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
 
 
 def issue_access_token(user: User) -> str:
-    return create_access_token(subject=str(user.id))
+    return create_access_token(subject=str(user.id), token_type="user")
+
+
+async def authenticate_admin(db: AsyncSession, email: str, password: str) -> AdminUser:
+    admin = await get_admin_by_email(db, email)
+    if not admin or not verify_password(password, admin.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not admin.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive admin.")
+    return admin
+
+
+def issue_admin_access_token(admin: AdminUser) -> str:
+    return create_access_token(subject=str(admin.id), token_type="admin")

@@ -3,8 +3,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_access_token
+from app.crud.admin_user import get_admin
 from app.crud.user import get_user
 from app.db.session import get_db
+from app.models.admin_user import AdminUser
 from app.models.user import User
 
 
@@ -20,7 +22,7 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication credentials were not provided.",
         )
-    subject = decode_access_token(credentials.credentials)
+    subject = decode_access_token(credentials.credentials, expected_type="user")
     if subject is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token.")
     user = await get_user(db, int(subject))
@@ -29,7 +31,19 @@ async def get_current_user(
     return user
 
 
-async def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
-    if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required.")
-    return current_user
+async def get_current_admin(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> AdminUser:
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication credentials were not provided.",
+        )
+    subject = decode_access_token(credentials.credentials, expected_type="admin")
+    if subject is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid admin token.")
+    admin = await get_admin(db, int(subject))
+    if admin is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin user not found.")
+    return admin

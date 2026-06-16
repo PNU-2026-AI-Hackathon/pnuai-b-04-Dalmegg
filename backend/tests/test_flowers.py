@@ -1,13 +1,13 @@
 import pytest
 
-from tests.helpers import create_shop_for_admin, register_and_login
+from tests.helpers import create_shop_for_admin, register_admin_and_login
 
 
 pytestmark = pytest.mark.asyncio
 
 
 async def test_admin_can_create_update_stock_and_query_flower(client):
-    token = await register_and_login(client, "flower-admin@example.com", is_admin=True)
+    token = await register_admin_and_login(client, "flower-admin@example.com")
     shop_id = await create_shop_for_admin(client, token)
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -43,7 +43,7 @@ async def test_admin_can_create_update_stock_and_query_flower(client):
 
 
 async def test_create_flower_rejects_missing_shop(client):
-    token = await register_and_login(client, "missing-shop-admin@example.com", is_admin=True)
+    token = await register_admin_and_login(client, "missing-shop-admin@example.com")
 
     response = await client.post(
         "/api/flowers",
@@ -55,7 +55,7 @@ async def test_create_flower_rejects_missing_shop(client):
 
 
 async def test_update_flower_image_rejects_unsupported_content_type(client):
-    token = await register_and_login(client, "image-type-admin@example.com", is_admin=True)
+    token = await register_admin_and_login(client, "image-type-admin@example.com")
     shop_id = await create_shop_for_admin(client, token)
     headers = {"Authorization": f"Bearer {token}"}
     create_response = await client.post(

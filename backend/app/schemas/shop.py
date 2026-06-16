@@ -23,7 +23,7 @@ class ShopUpdate(BaseModel):
 
 class ShopRead(ShopBase):
     id: int
-    owner_id: int
+    admin_id: int
     average_rating: float
     review_count: int
 

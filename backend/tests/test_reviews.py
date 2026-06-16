@@ -1,14 +1,14 @@
 import pytest
 
-from tests.helpers import create_shop_for_admin, register_and_login
+from tests.helpers import create_shop_for_admin, register_admin_and_login, register_user_and_login
 
 
 pytestmark = pytest.mark.asyncio
 
 
 async def test_review_creation_syncs_shop_rating_and_count(client):
-    admin_token = await register_and_login(client, "review-admin@example.com", is_admin=True)
-    user_token = await register_and_login(client, "review-user@example.com")
+    admin_token = await register_admin_and_login(client, "review-admin@example.com")
+    user_token = await register_user_and_login(client, "review-user@example.com")
     shop_id = await create_shop_for_admin(client, admin_token)
 
     first_response = await client.post(
@@ -32,7 +32,7 @@ async def test_review_creation_syncs_shop_rating_and_count(client):
 
 
 async def test_review_rejects_missing_shop(client):
-    user_token = await register_and_login(client, "missing-review-shop@example.com")
+    user_token = await register_user_and_login(client, "missing-review-shop@example.com")
 
     response = await client.post(
         "/api/reviews",

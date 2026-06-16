@@ -10,7 +10,7 @@ class Shop(Base):
     __tablename__ = "shop"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False, index=True)
+    admin_id: Mapped[int] = mapped_column(ForeignKey("admin_user.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     region: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     address: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -28,6 +28,6 @@ class Shop(Base):
         nullable=False,
     )
 
-    owner = relationship("User", back_populates="shops")
+    admin = relationship("AdminUser", back_populates="shops")
     flowers = relationship("Flower", back_populates="shop")
     reviews = relationship("Review", back_populates="shop")

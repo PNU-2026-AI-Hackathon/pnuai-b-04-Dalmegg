@@ -13,7 +13,7 @@ from app.crud.flower import (
 )
 from app.crud.shop import get_shop
 from app.db.session import get_db
-from app.models.user import User
+from app.models.admin_user import AdminUser
 from app.schemas.flower import FlowerCreate, FlowerRead, FlowerUpdate, StockUpdate
 from app.services.file_storage import save_flower_image
 
@@ -30,7 +30,7 @@ async def create_flower_endpoint(
     description: str | None = Form(None),
     color: str | None = Form(None),
     image: UploadFile | None = File(None),
-    current_admin: User = Depends(get_current_admin),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     flower_in = FlowerCreate(
@@ -44,7 +44,7 @@ async def create_flower_endpoint(
     shop = await get_shop(db, flower_in.shop_id)
     if shop is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shop not found.")
-    if shop.owner_id != current_admin.id:
+    if shop.admin_id != current_admin.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot manage another shop.")
 
     image_url = await save_flower_image(image)
@@ -74,13 +74,13 @@ async def read_flower_endpoint(flower_id: int, db: AsyncSession = Depends(get_db
 async def update_flower_endpoint(
     flower_id: int,
     flower_in: FlowerUpdate,
-    current_admin: User = Depends(get_current_admin),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     flower = await get_flower(db, flower_id)
     if flower is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flower not found.")
-    if flower.shop.owner_id != current_admin.id:
+    if flower.shop.admin_id != current_admin.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot manage another shop.")
 
     updated = await update_flower(db, flower, flower_in)
@@ -91,13 +91,13 @@ async def update_flower_endpoint(
 async def update_stock_endpoint(
     flower_id: int,
     stock_in: StockUpdate,
-    current_admin: User = Depends(get_current_admin),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     flower = await get_flower(db, flower_id)
     if flower is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flower not found.")
-    if flower.shop.owner_id != current_admin.id:
+    if flower.shop.admin_id != current_admin.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot manage another shop.")
 
     updated = await update_stock(db, flower, stock_in)
@@ -108,13 +108,13 @@ async def update_stock_endpoint(
 async def update_flower_image_endpoint(
     flower_id: int,
     image: UploadFile = File(...),
-    current_admin: User = Depends(get_current_admin),
+    current_admin: AdminUser = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     flower = await get_flower(db, flower_id)
     if flower is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flower not found.")
-    if flower.shop.owner_id != current_admin.id:
+    if flower.shop.admin_id != current_admin.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot manage another shop.")
 
     image_url = await save_flower_image(image)

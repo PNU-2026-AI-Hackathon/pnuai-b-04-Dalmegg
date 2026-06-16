@@ -1,14 +1,19 @@
 import pytest
 
-from tests.helpers import create_flower_for_admin, create_shop_for_admin, register_and_login
+from tests.helpers import (
+    create_flower_for_admin,
+    create_shop_for_admin,
+    register_admin_and_login,
+    register_user_and_login,
+)
 
 
 pytestmark = pytest.mark.asyncio
 
 
 async def test_user_can_create_list_and_delete_favorite(client):
-    admin_token = await register_and_login(client, "favorite-admin@example.com", is_admin=True)
-    user_token = await register_and_login(client, "favorite-user@example.com")
+    admin_token = await register_admin_and_login(client, "favorite-admin@example.com")
+    user_token = await register_user_and_login(client, "favorite-user@example.com")
     shop_id = await create_shop_for_admin(client, admin_token)
     flower_id = await create_flower_for_admin(client, admin_token, shop_id)
     headers = {"Authorization": f"Bearer {user_token}"}
@@ -25,8 +30,8 @@ async def test_user_can_create_list_and_delete_favorite(client):
 
 
 async def test_duplicate_favorite_is_rejected(client):
-    admin_token = await register_and_login(client, "duplicate-favorite-admin@example.com", is_admin=True)
-    user_token = await register_and_login(client, "duplicate-favorite-user@example.com")
+    admin_token = await register_admin_and_login(client, "duplicate-favorite-admin@example.com")
+    user_token = await register_user_and_login(client, "duplicate-favorite-user@example.com")
     shop_id = await create_shop_for_admin(client, admin_token)
     flower_id = await create_flower_for_admin(client, admin_token, shop_id)
     headers = {"Authorization": f"Bearer {user_token}"}

@@ -5,8 +5,8 @@ from app.models.shop import Shop
 from app.schemas.shop import ShopCreate, ShopUpdate
 
 
-async def create_shop(db: AsyncSession, shop_in: ShopCreate, owner_id: int) -> Shop:
-    shop = Shop(owner_id=owner_id, **shop_in.model_dump())
+async def create_shop(db: AsyncSession, shop_in: ShopCreate, admin_id: int) -> Shop:
+    shop = Shop(admin_id=admin_id, **shop_in.model_dump())
     db.add(shop)
     await db.commit()
     await db.refresh(shop)

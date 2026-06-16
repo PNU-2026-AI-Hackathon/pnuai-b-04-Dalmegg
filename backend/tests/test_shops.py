@@ -1,23 +1,12 @@
 import pytest
 
+from tests.helpers import register_admin_and_login, register_user_and_login
 
 pytestmark = pytest.mark.asyncio
 
 
 async def _admin_token(client) -> str:
-    await client.post(
-        "/api/auth/register",
-        json={
-            "email": "admin@example.com",
-            "password": "strong-password",
-            "is_admin": True,
-        },
-    )
-    response = await client.post(
-        "/api/auth/login",
-        json={"email": "admin@example.com", "password": "strong-password"},
-    )
-    return response.json()["access_token"]
+    return await register_admin_and_login(client, "admin@example.com")
 
 
 async def test_admin_can_create_update_and_list_shop(client):
@@ -51,15 +40,7 @@ async def test_admin_can_create_update_and_list_shop(client):
 
 
 async def test_non_admin_cannot_create_shop(client):
-    await client.post(
-        "/api/auth/register",
-        json={"email": "user@example.com", "password": "strong-password"},
-    )
-    login_response = await client.post(
-        "/api/auth/login",
-        json={"email": "user@example.com", "password": "strong-password"},
-    )
-    token = login_response.json()["access_token"]
+    token = await register_user_and_login(client, "user@example.com")
 
     response = await client.post(
         "/api/shops",
@@ -67,4 +48,4 @@ async def test_non_admin_cannot_create_shop(client):
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 401
