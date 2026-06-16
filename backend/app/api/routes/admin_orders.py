@@ -8,7 +8,7 @@ from app.db.session import get_db
 from app.models.admin_user import AdminUser
 from app.models.order import Order
 from app.models.order_item import OrderItem
-from app.schemas.order import OrderRead
+from app.schemas.order import AdminOrderRead
 
 
 router = APIRouter(prefix="/admin/orders", tags=["admin-orders"])
@@ -19,6 +19,8 @@ def _order_to_shop_order_dict(order: Order, shop_id: int) -> dict:
     return {
         "id": order.id,
         "user_id": order.user_id,
+        "user_email": order.user.email,
+        "user_full_name": order.user.full_name,
         "total_amount": sum(item.line_amount for item in items),
         "status": order.status,
         "created_at": order.created_at,
@@ -34,7 +36,7 @@ async def _ensure_shop_owner(db: AsyncSession, shop_id: int, admin_id: int) -> N
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot read another shop's orders.")
 
 
-@router.get("", response_model=list[OrderRead])
+@router.get("", response_model=list[AdminOrderRead])
 async def list_admin_shop_orders_endpoint(
     shop_id: int,
     current_admin: AdminUser = Depends(get_current_admin),
@@ -45,7 +47,7 @@ async def list_admin_shop_orders_endpoint(
     return [_order_to_shop_order_dict(order, shop_id) for order in orders]
 
 
-@router.get("/{order_id}", response_model=OrderRead)
+@router.get("/{order_id}", response_model=AdminOrderRead)
 async def read_admin_shop_order_endpoint(
     order_id: int,
     shop_id: int,

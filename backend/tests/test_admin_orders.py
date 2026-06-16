@@ -31,6 +31,7 @@ async def test_admin_can_list_orders_for_owned_shop(client):
 
     assert response.status_code == 200
     assert len(response.json()) == 1
+    assert response.json()[0]["user_email"] == "admin-order-user@example.com"
     assert response.json()[0]["total_amount"] == 6000
     assert response.json()[0]["items"][0]["flower_id"] == flower_id
 

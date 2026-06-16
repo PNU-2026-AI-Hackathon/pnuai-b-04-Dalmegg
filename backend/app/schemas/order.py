@@ -31,3 +31,8 @@ class OrderRead(BaseModel):
     items: list[OrderItemRead]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AdminOrderRead(OrderRead):
+    user_email: str
+    user_full_name: str | None

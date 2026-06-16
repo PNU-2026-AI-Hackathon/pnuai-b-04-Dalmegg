@@ -95,3 +95,26 @@ async def get_workshop_booking_with_details(
         .where(WorkshopBooking.id == booking_id)
     )
     return result.scalar_one_or_none()
+
+
+async def list_workshop_bookings_by_user(db: AsyncSession, user_id: int) -> list[WorkshopBooking]:
+    result = await db.execute(
+        select(WorkshopBooking)
+        .options(selectinload(WorkshopBooking.program), selectinload(WorkshopBooking.user))
+        .where(WorkshopBooking.user_id == user_id)
+        .order_by(WorkshopBooking.id.desc())
+    )
+    return list(result.scalars().all())
+
+
+async def get_workshop_booking_by_user(
+    db: AsyncSession,
+    booking_id: int,
+    user_id: int,
+) -> WorkshopBooking | None:
+    result = await db.execute(
+        select(WorkshopBooking)
+        .options(selectinload(WorkshopBooking.program), selectinload(WorkshopBooking.user))
+        .where(WorkshopBooking.id == booking_id, WorkshopBooking.user_id == user_id)
+    )
+    return result.scalar_one_or_none()

@@ -5,6 +5,8 @@ from app.api.deps import get_current_admin, get_current_user
 from app.crud.shop import get_shop
 from app.crud.workshop import (
     create_workshop_program,
+    get_workshop_booking_by_user,
+    list_workshop_bookings_by_user,
     list_workshop_programs,
     workshop_program_to_read_dict,
 )
@@ -54,3 +56,23 @@ async def create_workshop_booking_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     return await create_booking_and_reserve_seats(db, user=current_user, booking_in=booking_in)
+
+
+@router.get("/bookings", response_model=list[WorkshopBookingRead])
+async def list_my_workshop_bookings_endpoint(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await list_workshop_bookings_by_user(db, current_user.id)
+
+
+@router.get("/bookings/{booking_id}", response_model=WorkshopBookingRead)
+async def read_my_workshop_booking_endpoint(
+    booking_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    booking = await get_workshop_booking_by_user(db, booking_id, current_user.id)
+    if booking is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workshop booking not found.")
+    return booking

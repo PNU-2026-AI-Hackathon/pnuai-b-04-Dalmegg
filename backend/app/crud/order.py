@@ -24,7 +24,7 @@ async def create_order_with_items(
 
 async def get_order(db: AsyncSession, order_id: int) -> Order | None:
     result = await db.execute(
-        select(Order).options(selectinload(Order.items)).where(Order.id == order_id)
+        select(Order).options(selectinload(Order.items), selectinload(Order.user)).where(Order.id == order_id)
     )
     return result.scalar_one_or_none()
 
@@ -32,7 +32,7 @@ async def get_order(db: AsyncSession, order_id: int) -> Order | None:
 async def list_orders_by_user(db: AsyncSession, user_id: int) -> list[Order]:
     result = await db.execute(
         select(Order)
-        .options(selectinload(Order.items))
+        .options(selectinload(Order.items), selectinload(Order.user))
         .where(Order.user_id == user_id)
         .order_by(Order.id.desc())
     )
@@ -44,7 +44,7 @@ async def list_orders_by_shop(db: AsyncSession, shop_id: int) -> list[Order]:
         select(Order)
         .join(Order.items)
         .join(OrderItem.flower)
-        .options(selectinload(Order.items).selectinload(OrderItem.flower))
+        .options(selectinload(Order.items).selectinload(OrderItem.flower), selectinload(Order.user))
         .where(Flower.shop_id == shop_id)
         .order_by(Order.id.desc())
     )
@@ -54,7 +54,7 @@ async def list_orders_by_shop(db: AsyncSession, shop_id: int) -> list[Order]:
 async def get_order_with_items(db: AsyncSession, order_id: int) -> Order | None:
     result = await db.execute(
         select(Order)
-        .options(selectinload(Order.items).selectinload(OrderItem.flower))
+        .options(selectinload(Order.items).selectinload(OrderItem.flower), selectinload(Order.user))
         .where(Order.id == order_id)
     )
     return result.scalar_one_or_none()

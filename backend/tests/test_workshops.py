@@ -56,6 +56,41 @@ async def test_admin_can_create_program_and_user_can_book(client):
     assert list_response.status_code == 200
     assert list_response.json()[0]["remaining_seats"] == 4
 
+    my_bookings_response = await client.get(
+        "/api/workshops/bookings",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert my_bookings_response.status_code == 200
+    assert my_bookings_response.json()[0]["id"] == booking_response.json()["id"]
+
+    detail_response = await client.get(
+        f"/api/workshops/bookings/{booking_response.json()['id']}",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert detail_response.status_code == 200
+    assert detail_response.json()["participant_count"] == 2
+
+
+async def test_user_cannot_read_another_users_workshop_booking(client):
+    admin_token = await register_admin_and_login(client, "workshop-owner-check-admin@example.com")
+    user_token = await register_user_and_login(client, "workshop-owner-check-user@example.com")
+    other_user_token = await register_user_and_login(client, "workshop-owner-check-other@example.com")
+    shop_id = await create_shop_for_admin(client, admin_token)
+    program_id = await create_workshop_program(client, admin_token, shop_id)
+
+    booking_response = await client.post(
+        "/api/workshops/bookings",
+        json={"program_id": program_id, "participant_count": 1},
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+
+    response = await client.get(
+        f"/api/workshops/bookings/{booking_response.json()['id']}",
+        headers={"Authorization": f"Bearer {other_user_token}"},
+    )
+
+    assert response.status_code == 404
+
 
 async def test_booking_rejects_capacity_overflow(client):
     admin_token = await register_admin_and_login(client, "workshop-capacity-admin@example.com")
