@@ -6,16 +6,29 @@ public class FlowerController : MonoBehaviour
     [Tooltip("Sphere 또는 꽃 모델의 Renderer를 연결합니다.")]
     public Renderer flowerRenderer;
 
+    [Header("Growth Scale Multipliers")]
+    [SerializeField] private float witheredMinScale = 0.35f;
+    [SerializeField] private float witheredMaxScale = 0.5f;
+    [SerializeField] private float seedMinScale = 0.25f;
+    [SerializeField] private float seedMaxScale = 0.45f;
+    [SerializeField] private float growingMinScale = 0.75f;
+    [SerializeField] private float growingMaxScale = 1f;
+    [SerializeField] private float bloomMinScale = 1.15f;
+    [SerializeField] private float bloomMaxScale = 1.35f;
+
+    private Vector3 baseScale;
     private Material flowerMaterial;
 
     private void Awake()
     {
+        baseScale = transform.localScale;
         ResolveRenderer();
         CacheMaterial();
     }
 
     private void Reset()
     {
+        baseScale = transform.localScale;
         ResolveRenderer();
     }
 
@@ -28,27 +41,27 @@ public class FlowerController : MonoBehaviour
         switch (growthStage)
         {
             case GrowthStage.Withered:
-                scale = Mathf.Lerp(0.2f, 0.35f, normalizedScore);
+                scale = Mathf.Lerp(witheredMinScale, witheredMaxScale, normalizedScore);
                 color = new Color(0.18f, 0.14f, 0.1f);
                 break;
 
             case GrowthStage.Seed:
-                scale = Mathf.Lerp(0.18f, 0.45f, Mathf.InverseLerp(25f, 49f, growthScore));
+                scale = Mathf.Lerp(seedMinScale, seedMaxScale, Mathf.InverseLerp(25f, 49f, growthScore));
                 color = new Color(0.28f, 0.5f, 0.2f);
                 break;
 
             case GrowthStage.Growing:
-                scale = Mathf.Lerp(0.55f, 0.95f, Mathf.InverseLerp(50f, 74f, growthScore));
+                scale = Mathf.Lerp(growingMinScale, growingMaxScale, Mathf.InverseLerp(50f, 74f, growthScore));
                 color = new Color(0.45f, 0.85f, 0.35f);
                 break;
 
             case GrowthStage.Bloom:
-                scale = Mathf.Lerp(1.1f, 1.6f, Mathf.InverseLerp(75f, 100f, growthScore));
+                scale = Mathf.Lerp(bloomMinScale, bloomMaxScale, Mathf.InverseLerp(75f, 100f, growthScore));
                 color = new Color(1f, 0.35f, 0.62f);
                 break;
         }
 
-        transform.localScale = Vector3.one * scale;
+        transform.localScale = baseScale * scale;
         ApplyColor(color);
     }
 
