@@ -27,5 +27,10 @@ class Flower(Base):
     )
 
     shop = relationship("Shop", back_populates="flowers")
-    stock = relationship("FlowerStock", back_populates="flower", uselist=False)
+    stock = relationship("FlowerStock", back_populates="flower", uselist=False, cascade="all, delete-orphan")
+    stock_adjustments = relationship(
+        "FlowerStockAdjustment",
+        back_populates="flower",
+        cascade="all, delete-orphan",
+    )
     favorites = relationship("Favorite", back_populates="flower")

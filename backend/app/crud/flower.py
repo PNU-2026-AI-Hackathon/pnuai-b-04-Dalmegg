@@ -4,8 +4,9 @@ from sqlalchemy.orm import selectinload
 
 from app.models.flower import Flower
 from app.models.flower_stock import FlowerStock
+from app.models.flower_stock_adjustment import FlowerStockAdjustment
 from app.models.shop import Shop
-from app.schemas.flower import FlowerCreate, FlowerUpdate, StockUpdate
+from app.schemas.flower import FlowerCreate, FlowerUpdate, StockAdjustmentCreate, StockUpdate
 
 
 def flower_to_read_dict(flower: Flower) -> dict:
@@ -60,12 +61,68 @@ async def update_flower(db: AsyncSession, flower: Flower, flower_in: FlowerUpdat
 
 
 async def update_stock(db: AsyncSession, flower: Flower, stock_in: StockUpdate) -> Flower:
+    current_quantity = flower.stock.quantity if flower.stock else 0
+    change_quantity = stock_in.quantity - current_quantity
     if flower.stock is None:
         db.add(FlowerStock(flower_id=flower.id, quantity=stock_in.quantity))
     else:
         flower.stock.quantity = stock_in.quantity
+    db.add(
+        FlowerStockAdjustment(
+            flower_id=flower.id,
+            change_quantity=change_quantity,
+            quantity_after=stock_in.quantity,
+            reason="manual_adjustment",
+            memo="Updated through stock endpoint.",
+        )
+    )
     await db.commit()
     return await get_flower(db, flower.id)
+
+
+async def create_stock_adjustment(
+    db: AsyncSession,
+    *,
+    flower: Flower,
+    adjustment_in: StockAdjustmentCreate,
+    admin_id: int | None = None,
+) -> FlowerStockAdjustment:
+    current_quantity = flower.stock.quantity if flower.stock else 0
+    quantity_after = current_quantity + adjustment_in.change_quantity
+    if quantity_after < 0:
+        raise ValueError("Stock quantity cannot be negative.")
+
+    if flower.stock is None:
+        db.add(FlowerStock(flower_id=flower.id, quantity=quantity_after))
+    else:
+        flower.stock.quantity = quantity_after
+
+    adjustment = FlowerStockAdjustment(
+        flower_id=flower.id,
+        admin_id=admin_id,
+        change_quantity=adjustment_in.change_quantity,
+        quantity_after=quantity_after,
+        reason=adjustment_in.reason,
+        memo=adjustment_in.memo,
+    )
+    db.add(adjustment)
+    await db.commit()
+    await db.refresh(adjustment)
+    return adjustment
+
+
+async def list_stock_adjustments(db: AsyncSession, flower_id: int) -> list[FlowerStockAdjustment]:
+    result = await db.execute(
+        select(FlowerStockAdjustment)
+        .where(FlowerStockAdjustment.flower_id == flower_id)
+        .order_by(FlowerStockAdjustment.created_at.desc(), FlowerStockAdjustment.id.desc())
+    )
+    return list(result.scalars().all())
+
+
+async def delete_flower(db: AsyncSession, flower: Flower) -> None:
+    await db.delete(flower)
+    await db.commit()
 
 
 async def update_flower_image(db: AsyncSession, flower: Flower, image_url: str) -> Flower:

@@ -1,4 +1,7 @@
-from pydantic import BaseModel, ConfigDict, Field
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class FlowerBase(BaseModel):
@@ -27,6 +30,35 @@ class FlowerUpdate(BaseModel):
 
 class StockUpdate(BaseModel):
     quantity: int = Field(ge=0)
+
+
+StockAdjustmentReason = Literal["harvest", "sale", "discard", "manual_adjustment"]
+
+
+class StockAdjustmentCreate(BaseModel):
+    change_quantity: int
+    reason: StockAdjustmentReason
+    memo: str | None = Field(default=None, max_length=255)
+
+    @field_validator("change_quantity")
+    @classmethod
+    def validate_change_quantity(cls, value: int) -> int:
+        if value == 0:
+            raise ValueError("change_quantity must not be 0.")
+        return value
+
+
+class StockAdjustmentRead(BaseModel):
+    id: int
+    flower_id: int
+    admin_id: int | None
+    change_quantity: int
+    quantity_after: int
+    reason: str
+    memo: str | None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FlowerRead(FlowerBase):

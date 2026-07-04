@@ -5,6 +5,7 @@ from app.models.eco_contribution_log import EcoContributionLog
 from app.models.favorite import Favorite
 from app.models.flower import Flower
 from app.models.flower_stock import FlowerStock
+from app.models.flower_stock_adjustment import FlowerStockAdjustment
 from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.message import Message
@@ -23,6 +24,7 @@ __all__ = [
     "Favorite",
     "Flower",
     "FlowerStock",
+    "FlowerStockAdjustment",
     "Order",
     "OrderItem",
     "Message",
