@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = Field(default="test", min_length=16)
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
+    refresh_token_expire_minutes: int = 60 * 24 * 14
     create_tables_on_startup: bool = True
     upload_dir: str = str(BACKEND_DIR / "uploads")
 

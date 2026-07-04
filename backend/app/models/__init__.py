@@ -9,6 +9,7 @@ from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.message import Message
 from app.models.review import Review
+from app.models.revoked_token import RevokedToken
 from app.models.shop import Shop
 from app.models.user import User
 from app.models.workshop_booking import WorkshopBooking
@@ -26,6 +27,7 @@ __all__ = [
     "OrderItem",
     "Message",
     "Review",
+    "RevokedToken",
     "Shop",
     "User",
     "WorkshopBooking",

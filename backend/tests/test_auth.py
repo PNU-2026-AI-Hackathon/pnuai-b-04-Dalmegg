@@ -71,6 +71,69 @@ async def test_admin_register_login_and_me(client):
     assert me_response.json()["email"] == "admin@example.com"
 
 
+async def test_admin_login_refresh_and_logout_from_common_auth_routes(client):
+    await client.post(
+        "/api/admin/auth/register",
+        json={
+            "email": "operator@example.com",
+            "password": "strong-password",
+            "full_name": "Operator",
+        },
+    )
+
+    login_response = await client.post(
+        "/api/auth/login",
+        json={"email": "operator@example.com", "password": "strong-password"},
+    )
+    assert login_response.status_code == 200
+    login_data = login_response.json()
+    assert login_data["access_token"]
+    assert login_data["refresh_token"]
+
+    me_response = await client.get(
+        "/api/auth/me",
+        headers={"Authorization": f"Bearer {login_data['access_token']}"},
+    )
+    assert me_response.status_code == 200
+    assert me_response.json()["role"] == "admin"
+    assert me_response.json()["email"] == "operator@example.com"
+
+    refresh_response = await client.post(
+        "/api/auth/refresh",
+        json={"refresh_token": login_data["refresh_token"]},
+    )
+    assert refresh_response.status_code == 200
+    refreshed_data = refresh_response.json()
+    assert refreshed_data["access_token"]
+    assert refreshed_data["refresh_token"]
+    assert refreshed_data["refresh_token"] != login_data["refresh_token"]
+
+    reused_refresh_response = await client.post(
+        "/api/auth/refresh",
+        json={"refresh_token": login_data["refresh_token"]},
+    )
+    assert reused_refresh_response.status_code == 401
+
+    logout_response = await client.post(
+        "/api/auth/logout",
+        headers={"Authorization": f"Bearer {refreshed_data['access_token']}"},
+        json={"refresh_token": refreshed_data["refresh_token"]},
+    )
+    assert logout_response.status_code == 204
+
+    revoked_me_response = await client.get(
+        "/api/auth/me",
+        headers={"Authorization": f"Bearer {refreshed_data['access_token']}"},
+    )
+    assert revoked_me_response.status_code == 401
+
+    revoked_refresh_response = await client.post(
+        "/api/auth/refresh",
+        json={"refresh_token": refreshed_data["refresh_token"]},
+    )
+    assert revoked_refresh_response.status_code == 401
+
+
 async def test_duplicate_email_rejected(client):
     payload = {"email": "same@example.com", "password": "strong-password"}
 
