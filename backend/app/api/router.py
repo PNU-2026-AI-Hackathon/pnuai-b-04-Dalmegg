@@ -7,10 +7,12 @@ from app.api.routes import (
     auth,
     bouquet_orders,
     chat,
+    collections,
     eco,
     favorites,
     flowers,
     orders,
+    participants,
     reviews,
     shops,
     workshops,
@@ -29,6 +31,8 @@ api_router.include_router(flowers.router)
 api_router.include_router(reviews.router)
 api_router.include_router(favorites.router)
 api_router.include_router(eco.router)
+api_router.include_router(collections.router)
+api_router.include_router(participants.router)
 api_router.include_router(orders.router)
 api_router.include_router(workshops.router)
 api_router.include_router(bouquet_orders.router)
