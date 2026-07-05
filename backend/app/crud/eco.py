@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import func, select
@@ -59,7 +59,7 @@ async def list_all_contribution_logs(db: AsyncSession) -> list[EcoContributionLo
 
 async def get_collection_summary(db: AsyncSession) -> dict:
     logs = await list_all_contribution_logs(db)
-    today = date.today()
+    today = datetime.now(timezone.utc).date()
     today_weight = sum(
         (log.weight_kg for log in logs if log.created_at.date() == today),
         Decimal("0.000"),

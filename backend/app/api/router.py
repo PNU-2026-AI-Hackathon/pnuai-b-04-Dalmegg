@@ -8,6 +8,7 @@ from app.api.routes import (
     bouquet_orders,
     chat,
     collections,
+    dashboard,
     eco,
     favorites,
     flowers,
@@ -33,6 +34,7 @@ api_router.include_router(favorites.router)
 api_router.include_router(eco.router)
 api_router.include_router(collections.router)
 api_router.include_router(participants.router)
+api_router.include_router(dashboard.router)
 api_router.include_router(orders.router)
 api_router.include_router(workshops.router)
 api_router.include_router(bouquet_orders.router)
