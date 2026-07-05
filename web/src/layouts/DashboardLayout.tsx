@@ -7,12 +7,14 @@ import {
   Flower2,
   Gamepad2,
   Gauge,
+  LogOut,
   Menu,
   X,
 } from 'lucide-react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 import { ROUTES } from '../constants/routes'
+import { useAuthStore } from '../store/useAuthStore'
 import { useFarmStore } from '../store/useFarmStore'
 
 const navigation = [
@@ -24,7 +26,15 @@ const navigation = [
 ]
 
 export function DashboardLayout() {
+  const navigate = useNavigate()
   const { sidebarOpen, toggleSidebar, closeSidebar } = useFarmStore()
+  const operator = useAuthStore((state) => state.operator)
+  const logout = useAuthStore((state) => state.logout)
+
+  const handleLogout = () => {
+    logout()
+    navigate(ROUTES.login, { replace: true })
+  }
 
   return (
     <div className="min-h-screen bg-[#f6f8f7]">
@@ -69,7 +79,10 @@ export function DashboardLayout() {
           <button className="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-600 lg:hidden" onClick={toggleSidebar} aria-label="메뉴 열기">
             <Menu size={20} />
           </button>
-          <p className="hidden text-sm font-semibold text-slate-500 lg:block">운영자 통합 관제 시스템</p>
+          <div className="hidden lg:block">
+            <p className="text-sm font-semibold text-slate-500">운영자 통합 관제 시스템</p>
+            <p className="mt-0.5 text-xs font-bold text-emerald-700">{operator?.siteName ?? '스마트팜 운영지'}</p>
+          </div>
           <div className="ml-auto flex items-center gap-3">
             <button className="relative grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-emerald-600" aria-label="알림">
               <Bell size={19} />
@@ -78,10 +91,16 @@ export function DashboardLayout() {
             <button className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-2.5">
               <span className="grid size-8 place-items-center rounded-lg bg-emerald-100 text-xs font-extrabold text-emerald-700">관리</span>
               <span className="hidden text-left sm:block">
-                <span className="block text-xs font-bold text-slate-700">팜 매니저</span>
-                <span className="block text-[10px] text-slate-400">부산 스마트팜</span>
+                <span className="block text-xs font-bold text-slate-700">{operator?.name ?? '운영자'}</span>
+                <span className="block text-[10px] text-slate-400">{operator?.organization ?? '스마트팜 운영팀'}</span>
               </span>
               <ChevronDown className="text-slate-400" size={14} />
+            </button>
+            <button
+              className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-extrabold text-slate-500 hover:border-rose-200 hover:text-rose-600 sm:inline-flex"
+              onClick={handleLogout}
+            >
+              <LogOut size={16} /> 로그아웃
             </button>
           </div>
         </header>

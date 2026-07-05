@@ -5,6 +5,7 @@ public class FlowerController : MonoBehaviour
     [Header("Flower Object")]
     [Tooltip("Sphere 또는 꽃 모델의 Renderer를 연결합니다.")]
     public Renderer flowerRenderer;
+    [SerializeField] private Renderer[] flowerRenderers;
 
     [Header("Growth Scale Multipliers")]
     [SerializeField] private float witheredMinScale = 0.35f;
@@ -17,19 +18,19 @@ public class FlowerController : MonoBehaviour
     [SerializeField] private float bloomMaxScale = 1.35f;
 
     private Vector3 baseScale;
-    private Material flowerMaterial;
+    private Material[] flowerMaterials;
 
     private void Awake()
     {
         baseScale = transform.localScale;
-        ResolveRenderer();
-        CacheMaterial();
+        ResolveRenderers();
+        CacheMaterials();
     }
 
     private void Reset()
     {
         baseScale = transform.localScale;
-        ResolveRenderer();
+        ResolveRenderers();
     }
 
     public void ApplyGrowth(float growthScore, GrowthStage growthStage)
@@ -65,7 +66,7 @@ public class FlowerController : MonoBehaviour
         ApplyColor(color);
     }
 
-    private void ResolveRenderer()
+    private void ResolveRenderers()
     {
         if (flowerRenderer == null)
         {
@@ -76,41 +77,69 @@ public class FlowerController : MonoBehaviour
         {
             flowerRenderer = GetComponentInChildren<Renderer>();
         }
+
+        if (flowerRenderers == null || flowerRenderers.Length == 0)
+        {
+            flowerRenderers = GetComponentsInChildren<Renderer>();
+        }
+
+        if (flowerRenderer == null && flowerRenderers != null && flowerRenderers.Length > 0)
+        {
+            flowerRenderer = flowerRenderers[0];
+        }
     }
 
-    private void CacheMaterial()
+    private void CacheMaterials()
     {
-        ResolveRenderer();
+        ResolveRenderers();
 
-        if (flowerRenderer == null)
+        if (flowerRenderers == null || flowerRenderers.Length == 0)
         {
-            flowerMaterial = null;
+            flowerMaterials = null;
             return;
         }
 
-        flowerMaterial = flowerRenderer.material;
+        flowerMaterials = new Material[flowerRenderers.Length];
+
+        for (int i = 0; i < flowerRenderers.Length; i++)
+        {
+            if (flowerRenderers[i] != null)
+            {
+                flowerMaterials[i] = flowerRenderers[i].material;
+            }
+        }
     }
 
     private void ApplyColor(Color color)
     {
-        if (flowerMaterial == null)
+        if (flowerMaterials == null || flowerMaterials.Length == 0)
         {
-            CacheMaterial();
+            CacheMaterials();
         }
 
-        if (flowerMaterial == null)
+        if (flowerMaterials == null)
         {
             return;
         }
 
-        if (flowerMaterial.HasProperty("_BaseColor"))
+        for (int i = 0; i < flowerMaterials.Length; i++)
         {
-            flowerMaterial.SetColor("_BaseColor", color);
-        }
+            Material material = flowerMaterials[i];
 
-        if (flowerMaterial.HasProperty("_Color"))
-        {
-            flowerMaterial.SetColor("_Color", color);
+            if (material == null)
+            {
+                continue;
+            }
+
+            if (material.HasProperty("_BaseColor"))
+            {
+                material.SetColor("_BaseColor", color);
+            }
+
+            if (material.HasProperty("_Color"))
+            {
+                material.SetColor("_Color", color);
+            }
         }
     }
 }

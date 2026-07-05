@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   CalendarCheck2,
+  Building2,
   Droplets,
   Lightbulb,
   PackageX,
@@ -20,6 +21,7 @@ import {
   YAxis,
 } from 'recharts'
 import { adminAlerts, collectionStats, flowerInventory, sensors } from '../mock/dashboard'
+import { useAuthStore } from '../store/useAuthStore'
 
 const kpiIcons = {
   temperature: Thermometer,
@@ -42,16 +44,19 @@ const alertConfig = {
 }
 
 export function DashboardPage() {
+  const operator = useAuthStore((state) => state.operator)
+
   return (
     <div className="mx-auto max-w-[1500px]">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-bold text-emerald-600">2026년 6월 20일 토요일</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-slate-900 md:text-3xl">운영 대시보드</h1>
-          <p className="mt-2 text-sm text-slate-500">스마트팜의 핵심 운영 현황을 실시간으로 확인하세요.</p>
+          <p className="text-sm font-bold text-emerald-600">{operator?.role ?? '운영 관리자'} 전용 페이지</p>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-slate-900 md:text-3xl">{operator?.siteName ?? '스마트팜'} 운영 대시보드</h1>
+          <p className="mt-2 text-sm text-slate-500">{operator?.siteLocation ?? '담당 운영지'}의 기기 상태와 순환 운영 현황을 확인하세요.</p>
         </div>
         <div className="flex items-center gap-2 self-start rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
-          <span className="size-2 animate-pulse rounded-full bg-emerald-500" /> 시스템 연결됨
+          <Building2 size={16} />
+          <span className="size-2 animate-pulse rounded-full bg-emerald-500" /> 운영지 연결됨
         </div>
       </div>
 
@@ -72,6 +77,22 @@ export function DashboardPage() {
             </article>
           )
         })}
+      </section>
+
+      <section className="dashboard-card mt-5 p-5 md:p-6">
+        <div><h2 className="section-title">최근 알림</h2><p className="section-description">운영 확인이 필요한 새로운 소식</p></div>
+        <div className="mt-5 divide-y divide-slate-100">
+          {adminAlerts.map((alert) => {
+            const { icon: Icon, tone } = alertConfig[alert.type]
+            return (
+              <div key={alert.id} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
+                <div className={`grid size-10 shrink-0 place-items-center rounded-xl ${tone}`}><Icon size={18} /></div>
+                <div className="min-w-0 flex-1"><p className="text-sm font-bold text-slate-800">{alert.title}</p><p className="truncate text-xs text-slate-400">{alert.description}</p></div>
+                <time className="shrink-0 text-[11px] text-slate-400">{alert.time}</time>
+              </div>
+            )
+          })}
+        </div>
       </section>
 
       <section className="mt-5 grid gap-5 xl:grid-cols-2">
@@ -107,22 +128,6 @@ export function DashboardPage() {
             </ResponsiveContainer>
           </div>
         </article>
-      </section>
-
-      <section className="dashboard-card mt-5 p-5 md:p-6">
-        <div><h2 className="section-title">최근 알림</h2><p className="section-description">운영 확인이 필요한 새로운 소식</p></div>
-        <div className="mt-5 divide-y divide-slate-100">
-          {adminAlerts.map((alert) => {
-            const { icon: Icon, tone } = alertConfig[alert.type]
-            return (
-              <div key={alert.id} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
-                <div className={`grid size-10 shrink-0 place-items-center rounded-xl ${tone}`}><Icon size={18} /></div>
-                <div className="min-w-0 flex-1"><p className="text-sm font-bold text-slate-800">{alert.title}</p><p className="truncate text-xs text-slate-400">{alert.description}</p></div>
-                <time className="shrink-0 text-[11px] text-slate-400">{alert.time}</time>
-              </div>
-            )
-          })}
-        </div>
       </section>
     </div>
   )

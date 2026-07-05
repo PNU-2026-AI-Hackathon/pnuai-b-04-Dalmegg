@@ -36,6 +36,7 @@ public class UIManager : MonoBehaviour
     {
         ResolveSceneReferences();
         ResolveSlidersByName();
+        ResolveTextsByName();
         ConfigureSliders();
     }
 
@@ -46,8 +47,7 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        InitializeSliderValues();
-        ApplySliderValues();
+        SyncFromEnvironment();
     }
 
     private void OnDisable()
@@ -72,6 +72,7 @@ public class UIManager : MonoBehaviour
         if (environmentController != null)
         {
             environmentController.SetEnvironment(temperature, humidity, light, soilMoisture);
+            environmentController.RequestGrowthRecalculation();
         }
 
         UpdateValueLabels(temperature, humidity, light, soilMoisture);
@@ -86,6 +87,28 @@ public class UIManager : MonoBehaviour
         SetSliderValueWithoutNotify(humiditySlider, DefaultHumidity);
         SetSliderValueWithoutNotify(lightSlider, DefaultLight);
         SetSliderValueWithoutNotify(soilMoistureSlider, DefaultSoilMoisture);
+
+        isInitializing = false;
+        ApplySliderValues();
+    }
+
+    public void SyncFromEnvironment()
+    {
+        isInitializing = true;
+
+        ResolveSceneReferences();
+        ResolveSlidersByName();
+        ResolveTextsByName();
+
+        float temperature = environmentController == null ? DefaultTemperature : environmentController.Temperature;
+        float humidity = environmentController == null ? DefaultHumidity : environmentController.Humidity;
+        float light = environmentController == null ? DefaultLight : environmentController.Light;
+        float soilMoisture = environmentController == null ? DefaultSoilMoisture : environmentController.SoilMoisture;
+
+        SetSliderValueWithoutNotify(temperatureSlider, temperature);
+        SetSliderValueWithoutNotify(humiditySlider, humidity);
+        SetSliderValueWithoutNotify(lightSlider, light);
+        SetSliderValueWithoutNotify(soilMoistureSlider, soilMoisture);
 
         isInitializing = false;
         ApplySliderValues();
@@ -141,6 +164,50 @@ public class UIManager : MonoBehaviour
     {
         GameObject sliderObject = GameObject.Find(objectName);
         return sliderObject == null ? null : sliderObject.GetComponent<Slider>();
+    }
+
+    private void ResolveTextsByName()
+    {
+        if (temperatureValueText == null)
+        {
+            temperatureValueText = FindText("Temperature Value Text");
+        }
+
+        if (humidityValueText == null)
+        {
+            humidityValueText = FindText("Humidity Value Text");
+        }
+
+        if (lightValueText == null)
+        {
+            lightValueText = FindText("Light Value Text");
+        }
+
+        if (soilMoistureValueText == null)
+        {
+            soilMoistureValueText = FindText("Soil Moisture Value Text");
+        }
+
+        if (growthScoreText == null)
+        {
+            growthScoreText = FindText("Growth Score Text");
+        }
+
+        if (growthStageText == null)
+        {
+            growthStageText = FindText("Growth Stage Text");
+        }
+
+        if (statusMessageText == null)
+        {
+            statusMessageText = FindText("Status Message Text");
+        }
+    }
+
+    private TMP_Text FindText(string objectName)
+    {
+        GameObject textObject = GameObject.Find(objectName);
+        return textObject == null ? null : textObject.GetComponent<TMP_Text>();
     }
 
     private void ConfigureSliders()

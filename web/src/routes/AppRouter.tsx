@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 import {
   createBrowserRouter,
+  useLocation,
   Navigate,
   RouterProvider,
 } from 'react-router-dom'
@@ -8,7 +9,9 @@ import { ROUTES } from '../constants/routes'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import { PublicLayout } from '../layouts/PublicLayout'
 import { LandingPage } from '../pages/LandingPage'
+import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { useAuthStore } from '../store/useAuthStore'
 
 const DashboardPage = lazy(() =>
   import('../pages/DashboardPage').then((module) => ({
@@ -61,6 +64,17 @@ function lazyPage(page: ReactNode) {
   return <Suspense fallback={<RouteLoader />}>{page}</Suspense>
 }
 
+function RequireAuth({ children }: { children: ReactNode }) {
+  const location = useLocation()
+  const operator = useAuthStore((state) => state.operator)
+
+  if (!operator) {
+    return <Navigate to={ROUTES.login} replace state={{ from: location }} />
+  }
+
+  return children
+}
+
 const router = createBrowserRouter([
   {
     element: <PublicLayout />,
@@ -68,6 +82,10 @@ const router = createBrowserRouter([
       {
         path: ROUTES.home,
         element: <LandingPage />,
+      },
+      {
+        path: ROUTES.login,
+        element: <LoginPage />,
       },
       {
         path: ROUTES.simulator,
@@ -80,7 +98,11 @@ const router = createBrowserRouter([
     ],
   },
   {
-    element: <DashboardLayout />,
+    element: (
+      <RequireAuth>
+        <DashboardLayout />
+      </RequireAuth>
+    ),
     children: [
       {
         path: ROUTES.dashboard,

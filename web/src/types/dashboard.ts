@@ -91,6 +91,7 @@ export interface FlowerInventoryItem {
   stock: number
   price: number
   status: InventoryStatus
+  imageUrl?: string
 }
 
 export type ReservationStatus = 'confirmed' | 'pending' | 'cancelled'

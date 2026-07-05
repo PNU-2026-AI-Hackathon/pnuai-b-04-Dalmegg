@@ -49,7 +49,7 @@ export function LandingPage() {
             <a href="#service" className="hover:text-emerald-600">서비스</a>
             <a href="#cycle" className="hover:text-emerald-600">순환 구조</a>
             <a href="#impact" className="hover:text-emerald-600">참여 현황</a>
-            <Link to={ROUTES.dashboard} className="rounded-full bg-emerald-700 px-5 py-2.5 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-800">운영자 페이지</Link>
+            <Link to={ROUTES.login} className="rounded-full bg-emerald-700 px-5 py-2.5 text-white shadow-lg shadow-emerald-200 hover:bg-emerald-800">운영자 로그인</Link>
           </nav>
           <button className="text-slate-700 md:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="메뉴 열기">
             {menuOpen ? <X /> : <Menu />}
@@ -61,7 +61,7 @@ export function LandingPage() {
               <a href="#service" onClick={() => setMenuOpen(false)}>서비스</a>
               <a href="#cycle" onClick={() => setMenuOpen(false)}>순환 구조</a>
               <a href="#impact" onClick={() => setMenuOpen(false)}>참여 현황</a>
-              <Link to={ROUTES.dashboard} className="text-emerald-700">운영자 페이지</Link>
+              <Link to={ROUTES.login} className="text-emerald-700">운영자 로그인</Link>
             </div>
           </nav>
         )}
@@ -167,7 +167,7 @@ export function LandingPage() {
       <footer className="bg-slate-950 px-5 py-12 text-white lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
           <div><Logo /><p className="mt-5 max-w-sm text-sm leading-6 text-slate-400">계란껍질 재활용 기반 순환형 스마트 플라워팜 플랫폼</p></div>
-          <div className="text-sm text-slate-500"><p>© 2026 닮은살걀. All rights reserved.</p><Link to={ROUTES.dashboard} className="mt-2 inline-block hover:text-emerald-400">운영자 로그인</Link></div>
+          <div className="text-sm text-slate-500"><p>© 2026 닮은살걀. All rights reserved.</p><Link to={ROUTES.login} className="mt-2 inline-block hover:text-emerald-400">운영자 로그인</Link></div>
         </div>
       </footer>
     </div>
