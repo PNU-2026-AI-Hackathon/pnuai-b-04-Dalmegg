@@ -14,6 +14,8 @@ from app.api.routes import (
     flowers,
     orders,
     participants,
+    programs,
+    reservations,
     reviews,
     shops,
     workshops,
@@ -25,6 +27,7 @@ api_router.include_router(auth.router)
 api_router.include_router(admin_auth.router)
 api_router.include_router(admin_orders.router)
 api_router.include_router(admin_workshops.router)
+api_router.include_router(reservations.admin_router)
 api_router.include_router(bouquet_orders.admin_router)
 api_router.include_router(chat.admin_router)
 api_router.include_router(shops.router)
@@ -36,6 +39,8 @@ api_router.include_router(collections.router)
 api_router.include_router(participants.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(orders.router)
+api_router.include_router(programs.router)
 api_router.include_router(workshops.router)
+api_router.include_router(reservations.router)
 api_router.include_router(bouquet_orders.router)
 api_router.include_router(chat.router)

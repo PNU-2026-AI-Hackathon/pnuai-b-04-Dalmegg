@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -28,9 +29,25 @@ class WorkshopProgramRead(BaseModel):
     price_per_person: float
 
 
+class WorkshopAvailableSlotRead(BaseModel):
+    program_id: int
+    starts_at: datetime
+    capacity: int
+    booked_count: int
+    remaining_seats: int
+    is_available: bool
+
+
 class WorkshopBookingCreate(BaseModel):
     program_id: int = Field(gt=0)
     participant_count: int = Field(gt=0)
+
+
+WorkshopBookingStatus = Literal["reserved", "confirmed", "completed", "cancelled", "no_show"]
+
+
+class WorkshopBookingStatusUpdate(BaseModel):
+    status: WorkshopBookingStatus
 
 
 class WorkshopBookingRead(BaseModel):

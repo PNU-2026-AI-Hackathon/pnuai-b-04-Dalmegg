@@ -1,9 +1,11 @@
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.workshop_booking import WorkshopBooking
 from app.models.workshop_program import WorkshopProgram
+from app.models.shop import Shop
+from app.models.user import User
 from app.schemas.workshop import WorkshopProgramCreate
 
 
@@ -81,6 +83,40 @@ async def list_workshop_bookings_by_shop(
     )
     if program_id is not None:
         stmt = stmt.where(WorkshopBooking.program_id == program_id)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def list_workshop_bookings_for_admin(
+    db: AsyncSession,
+    admin_id: int,
+    *,
+    shop_id: int | None = None,
+    status: str | None = None,
+    q: str | None = None,
+) -> list[WorkshopBooking]:
+    stmt = (
+        select(WorkshopBooking)
+        .join(WorkshopBooking.program)
+        .join(Shop, WorkshopProgram.shop_id == Shop.id)
+        .join(WorkshopBooking.user)
+        .options(selectinload(WorkshopBooking.program), selectinload(WorkshopBooking.user))
+        .where(Shop.admin_id == admin_id)
+        .order_by(WorkshopBooking.id.desc())
+    )
+    if shop_id is not None:
+        stmt = stmt.where(WorkshopProgram.shop_id == shop_id)
+    if status is not None:
+        stmt = stmt.where(WorkshopBooking.status == status)
+    if q:
+        like = f"%{q}%"
+        stmt = stmt.where(
+            or_(
+                WorkshopProgram.title.like(like),
+                User.email.like(like),
+                User.full_name.like(like),
+            )
+        )
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
