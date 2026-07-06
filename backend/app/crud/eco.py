@@ -16,6 +16,8 @@ async def create_contribution_log(
     saved_co2_kg,
     reward_points: int,
     memo: str | None,
+    image_url: str | None = None,
+    status: str = "approved",
 ) -> EcoContributionLog:
     log = EcoContributionLog(
         user_id=user_id,
@@ -23,9 +25,16 @@ async def create_contribution_log(
         saved_co2_kg=saved_co2_kg,
         reward_points=reward_points,
         memo=memo,
+        image_url=image_url,
+        status=status,
     )
     db.add(log)
     return log
+
+
+async def get_contribution_log(db: AsyncSession, contribution_id: int) -> EcoContributionLog | None:
+    result = await db.execute(select(EcoContributionLog).where(EcoContributionLog.id == contribution_id))
+    return result.scalar_one_or_none()
 
 
 async def list_contribution_logs(
@@ -47,13 +56,39 @@ async def list_contribution_logs(
 
 async def count_contribution_logs(db: AsyncSession, user_id: int) -> int:
     result = await db.execute(
-        select(func.count(EcoContributionLog.id)).where(EcoContributionLog.user_id == user_id)
+        select(func.count(EcoContributionLog.id)).where(
+            EcoContributionLog.user_id == user_id,
+            EcoContributionLog.status == "approved",
+        )
+    )
+    return int(result.scalar_one())
+
+
+async def count_pending_contribution_logs(db: AsyncSession, user_id: int) -> int:
+    result = await db.execute(
+        select(func.count(EcoContributionLog.id)).where(
+            EcoContributionLog.user_id == user_id,
+            EcoContributionLog.status == "pending",
+        )
     )
     return int(result.scalar_one())
 
 
 async def list_all_contribution_logs(db: AsyncSession) -> list[EcoContributionLog]:
-    result = await db.execute(select(EcoContributionLog).order_by(EcoContributionLog.created_at))
+    result = await db.execute(
+        select(EcoContributionLog)
+        .where(EcoContributionLog.status == "approved")
+        .order_by(EcoContributionLog.created_at)
+    )
+    return list(result.scalars().all())
+
+
+async def list_pending_contribution_logs(db: AsyncSession) -> list[EcoContributionLog]:
+    result = await db.execute(
+        select(EcoContributionLog)
+        .where(EcoContributionLog.status == "pending")
+        .order_by(EcoContributionLog.created_at.desc(), EcoContributionLog.id.desc())
+    )
     return list(result.scalars().all())
 
 

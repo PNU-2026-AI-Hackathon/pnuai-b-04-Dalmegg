@@ -16,6 +16,10 @@ class EcoContributionLog(Base):
     saved_co2_kg: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
     reward_points: Mapped[int] = mapped_column(Integer, nullable=False)
     memo: Mapped[str | None] = mapped_column(String(255))
+    image_url: Mapped[str | None] = mapped_column(String(500))
+    status: Mapped[str] = mapped_column(String(20), default="approved", nullable=False, index=True)
+    reviewed_by_admin_id: Mapped[int | None] = mapped_column(ForeignKey("admin_user.id"), nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )

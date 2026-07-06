@@ -148,6 +148,48 @@ async def test_collections_participants_and_rewards_flow(client):
     assert updated_points_response.json()["reward_points"] == 100
 
 
+async def test_user_collection_submission_requires_admin_approval(client):
+    admin_token = await register_admin_and_login(client, "approval-admin@example.com")
+    user_token = await register_user_and_login(client, "approval-user@example.com")
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    user_headers = {"Authorization": f"Bearer {user_token}"}
+
+    submit_response = await client.post(
+        "/api/collections",
+        json={"weight_kg": "0.500", "memo": "submitted by user"},
+        headers=user_headers,
+    )
+    assert submit_response.status_code == 201
+    submitted = submit_response.json()
+    assert submitted["status"] == "pending"
+
+    pending_summary_response = await client.get("/api/eco/me/summary", headers=user_headers)
+    pending_summary = pending_summary_response.json()
+    assert Decimal(pending_summary["accumulated_eggshell_kg"]) == Decimal("0.000")
+    assert pending_summary["reward_points"] == 0
+    assert pending_summary["contribution_count"] == 0
+    assert pending_summary["pending_contribution_count"] == 1
+
+    pending_response = await client.get("/api/collections/pending", headers=admin_headers)
+    assert pending_response.status_code == 200
+    assert pending_response.json()[0]["id"] == submitted["id"]
+
+    approve_response = await client.patch(
+        f"/api/collections/{submitted['id']}/approve",
+        headers=admin_headers,
+    )
+    assert approve_response.status_code == 200
+    assert approve_response.json()["status"] == "approved"
+
+    my_page_response = await client.get("/api/users/me", headers=user_headers)
+    assert my_page_response.status_code == 200
+    my_page = my_page_response.json()
+    assert Decimal(my_page["accumulated_eggshell_kg"]) == Decimal("0.500")
+    assert my_page["reward_points"] == 50
+    assert my_page["contribution_count"] == 1
+    assert my_page["pending_contribution_count"] == 0
+
+
 async def test_reward_redemption_rejects_insufficient_points(client):
     admin_token = await register_admin_and_login(client, "reward-admin@example.com")
     user_token = await register_user_and_login(client, "reward-user@example.com")

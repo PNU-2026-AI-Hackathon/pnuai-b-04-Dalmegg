@@ -6,9 +6,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class CollectionCreate(BaseModel):
-    user_id: int = Field(gt=0)
+    user_id: int | None = Field(default=None, gt=0)
     weight_kg: Decimal = Field(gt=0, max_digits=10, decimal_places=3)
     memo: str | None = Field(default=None, max_length=255)
+    image_url: str | None = Field(default=None, max_length=500)
 
 
 class CollectionRead(BaseModel):
@@ -18,6 +19,10 @@ class CollectionRead(BaseModel):
     saved_co2_kg: Decimal
     reward_points: int
     memo: str | None
+    image_url: str | None
+    status: str
+    reviewed_by_admin_id: int | None
+    reviewed_at: datetime | None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

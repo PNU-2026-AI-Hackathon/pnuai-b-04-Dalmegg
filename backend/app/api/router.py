@@ -18,6 +18,7 @@ from app.api.routes import (
     reservations,
     reviews,
     shops,
+    users,
     workshops,
 )
 
@@ -31,6 +32,7 @@ api_router.include_router(reservations.admin_router)
 api_router.include_router(bouquet_orders.admin_router)
 api_router.include_router(chat.admin_router)
 api_router.include_router(shops.router)
+api_router.include_router(users.router)
 api_router.include_router(flowers.router)
 api_router.include_router(reviews.router)
 api_router.include_router(favorites.router)
