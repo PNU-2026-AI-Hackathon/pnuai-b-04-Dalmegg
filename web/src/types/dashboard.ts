@@ -65,52 +65,60 @@ export interface SensorHistory {
 }
 
 export interface CollectionData {
-  day: string
-  amount: number
+  period: string
+  weight_kg: number
+  collection_count: number
 }
 
 export interface FlowerInventory {
   name: string
-  stock: number
-  target: number
+  stock_quantity: number
 }
 
 export interface AdminAlert {
   id: number
+  type: 'sensor' | 'reservation' | 'stock'
   title: string
-  description: string
-  time: string
-  type: 'sensor' | 'reservation' | 'inventory'
+  message: string
+  severity: 'info' | 'warning' | 'danger'
+  is_read: boolean
 }
 
 export type InventoryStatus = 'sufficient' | 'low' | 'soldout'
 
 export interface FlowerInventoryItem {
   id: number
+  shop_id: number
   name: string
-  stock: number
+  description: string
+  color: string
   price: number
-  status: InventoryStatus
-  imageUrl?: string
+  stock_quantity: number
+  image_url?: string
 }
 
-export type ReservationStatus = 'confirmed' | 'pending' | 'cancelled'
+export type ReservationStatus = 'reserved' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
 
 export interface Reservation {
   id: number
-  customerName: string
-  phone: string
-  programName: string
-  date: string
-  time: string
-  participants: number
+  user_id: number
+  program_id: number
+  participant_count: number
+  total_amount: number
   status: ReservationStatus
-  note: string
+  created_at: string
+  user_email: string
+  user_full_name: string
+  program_title: string
+  shop_id: number
 }
 
 export interface CollectionRanking {
   rank: number
-  name: string
-  amount: number
-  points: number
+  user_id: number
+  email: string
+  full_name: string
+  total_weight_kg: number
+  reward_points: number
+  contribution_count: number
 }

@@ -11,6 +11,7 @@ import { PublicLayout } from '../layouts/PublicLayout'
 import { LandingPage } from '../pages/LandingPage'
 import { LoginPage } from '../pages/LoginPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { SignupPage } from '../pages/SignupPage'
 import { useAuthStore } from '../store/useAuthStore'
 
 const DashboardPage = lazy(() =>
@@ -86,6 +87,10 @@ const router = createBrowserRouter([
       {
         path: ROUTES.login,
         element: <LoginPage />,
+      },
+      {
+        path: ROUTES.signup,
+        element: <SignupPage />,
       },
       {
         path: ROUTES.simulator,

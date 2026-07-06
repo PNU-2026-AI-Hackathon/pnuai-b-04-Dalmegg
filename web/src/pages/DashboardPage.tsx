@@ -8,6 +8,7 @@ import {
   Thermometer,
   Waves,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import {
   Area,
   AreaChart,
@@ -20,8 +21,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { adminAlerts, collectionStats, flowerInventory, sensors } from '../mock/dashboard'
+import { getDashboardSummary } from '../api/dashboard'
+import { listFlowers } from '../api/flowers'
+import { collectionStats, flowerInventory, sensors } from '../mock/dashboard'
 import { useAuthStore } from '../store/useAuthStore'
+import { useNotificationStore } from '../store/useNotificationStore'
+import type { CollectionData, FlowerInventory } from '../types/dashboard'
 
 const kpiIcons = {
   temperature: Thermometer,
@@ -40,19 +45,62 @@ const kpiTones = {
 const alertConfig = {
   sensor: { icon: AlertTriangle, tone: 'bg-rose-50 text-rose-600' },
   reservation: { icon: CalendarCheck2, tone: 'bg-sky-50 text-sky-600' },
-  inventory: { icon: PackageX, tone: 'bg-amber-50 text-amber-600' },
+  stock: { icon: PackageX, tone: 'bg-amber-50 text-amber-600' },
 }
 
 export function DashboardPage() {
   const operator = useAuthStore((state) => state.operator)
+  const alerts = useNotificationStore((state) => state.alerts)
+  const setAlerts = useNotificationStore((state) => state.setAlerts)
+  const markAsRead = useNotificationStore((state) => state.markAsRead)
+  const [dashboardCollectionStats, setDashboardCollectionStats] = useState<CollectionData[]>(collectionStats)
+  const [dashboardFlowerInventory, setDashboardFlowerInventory] = useState<FlowerInventory[]>(flowerInventory)
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadDashboardData() {
+      try {
+        const summary = await getDashboardSummary()
+
+        if (ignore) {
+          return
+        }
+
+        setAlerts(summary.recent_alerts)
+        setDashboardCollectionStats(summary.collection_stats)
+      } catch {
+        // 데이터를 불러오지 못하면 기존 화면 데이터를 유지합니다.
+      }
+
+      try {
+        const flowers = await listFlowers(operator?.shop_id || undefined)
+
+        if (!ignore && flowers.length > 0) {
+          setDashboardFlowerInventory(flowers.map((flower) => ({
+            name: flower.name,
+            stock_quantity: flower.stock_quantity,
+          })))
+        }
+      } catch {
+        // 꽃 재고를 불러오지 못하면 기존 화면 차트를 유지합니다.
+      }
+    }
+
+    loadDashboardData()
+
+    return () => {
+      ignore = true
+    }
+  }, [operator?.shop_id, setAlerts])
 
   return (
     <div className="mx-auto max-w-[1500px]">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-bold text-emerald-600">{operator?.role ?? '운영 관리자'} 전용 페이지</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-slate-900 md:text-3xl">{operator?.siteName ?? '스마트팜'} 운영 대시보드</h1>
-          <p className="mt-2 text-sm text-slate-500">{operator?.siteLocation ?? '담당 운영지'}의 기기 상태와 순환 운영 현황을 확인하세요.</p>
+          <p className="text-sm font-bold text-emerald-600">운영자 전용 페이지</p>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-slate-900 md:text-3xl">{operator?.shop_name ?? '스마트팜'} 운영 대시보드</h1>
+          <p className="mt-2 text-sm text-slate-500">{operator?.address ?? '담당 운영지'}의 기기 상태와 순환 운영 현황을 확인하세요.</p>
         </div>
         <div className="flex items-center gap-2 self-start rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
           <Building2 size={16} />
@@ -82,14 +130,23 @@ export function DashboardPage() {
       <section className="dashboard-card mt-5 p-5 md:p-6">
         <div><h2 className="section-title">최근 알림</h2><p className="section-description">운영 확인이 필요한 새로운 소식</p></div>
         <div className="mt-5 divide-y divide-slate-100">
-          {adminAlerts.map((alert) => {
+          {alerts.map((alert) => {
             const { icon: Icon, tone } = alertConfig[alert.type]
             return (
-              <div key={alert.id} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
+              <button
+                key={alert.id}
+                type="button"
+                onClick={() => markAsRead(alert.id)}
+                className="flex w-full items-center gap-4 py-4 text-left first:pt-0 last:pb-0"
+              >
                 <div className={`grid size-10 shrink-0 place-items-center rounded-xl ${tone}`}><Icon size={18} /></div>
-                <div className="min-w-0 flex-1"><p className="text-sm font-bold text-slate-800">{alert.title}</p><p className="truncate text-xs text-slate-400">{alert.description}</p></div>
-                <time className="shrink-0 text-[11px] text-slate-400">{alert.time}</time>
-              </div>
+                <div className="min-w-0 flex-1"><p className="text-sm font-bold text-slate-800">{alert.title}</p><p className="truncate text-xs text-slate-400">{alert.message}</p></div>
+                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold ${
+                  alert.is_read ? 'bg-slate-100 text-slate-500' : alert.severity === 'danger' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'
+                }`}>
+                  {alert.is_read ? '읽음' : '미확인'}
+                </span>
+              </button>
             )
           })}
         </div>
@@ -100,13 +157,13 @@ export function DashboardPage() {
           <div><h2 className="section-title">계란껍질 수거량</h2><p className="section-description">최근 7일 수거량 통계 (kg)</p></div>
           <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={collectionStats} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+              <AreaChart data={dashboardCollectionStats} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                 <defs><linearGradient id="collectionFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#10b981" stopOpacity={0.25} /><stop offset="95%" stopColor="#10b981" stopOpacity={0} /></linearGradient></defs>
                 <CartesianGrid vertical={false} stroke="#e9efec" strokeDasharray="4 4" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} dy={8} />
+                <XAxis dataKey="period" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} dy={8} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} />
                 <Tooltip contentStyle={{ borderRadius: 14, border: '1px solid #e2e8f0' }} formatter={(value) => [`${value}kg`, '수거량']} />
-                <Area type="monotone" dataKey="amount" stroke="#059669" strokeWidth={3} fill="url(#collectionFill)" />
+                <Area type="monotone" dataKey="weight_kg" stroke="#059669" strokeWidth={3} fill="url(#collectionFill)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -116,13 +173,13 @@ export function DashboardPage() {
           <div><h2 className="section-title">꽃 재고 현황</h2><p className="section-description">품종별 현재 보유 수량 (주)</p></div>
           <div className="mt-5 h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={flowerInventory} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+              <BarChart data={dashboardFlowerInventory} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke="#e9efec" strokeDasharray="4 4" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} dy={8} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11 }} />
                 <Tooltip contentStyle={{ borderRadius: 14, border: '1px solid #e2e8f0' }} formatter={(value) => [`${value}주`, '재고']} />
-                <Bar dataKey="stock" radius={[8, 8, 2, 2]} maxBarSize={52}>
-                  {flowerInventory.map((item, index) => <Cell key={item.name} fill={index === 3 ? '#f59e0b' : '#10b981'} />)}
+                <Bar dataKey="stock_quantity" radius={[8, 8, 2, 2]} maxBarSize={52}>
+                  {dashboardFlowerInventory.map((item, index) => <Cell key={item.name} fill={index === 3 ? '#f59e0b' : '#10b981'} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
