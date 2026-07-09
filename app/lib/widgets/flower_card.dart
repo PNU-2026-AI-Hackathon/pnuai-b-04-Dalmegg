@@ -4,9 +4,10 @@ import '../models/flower.dart';
 import '../theme/app_theme.dart';
 
 class FlowerCard extends StatefulWidget {
-  const FlowerCard({super.key, required this.flower});
+  const FlowerCard({super.key, required this.flower, required this.onBuy});
 
   final Flower flower;
+  final Future<void> Function() onBuy;
 
   @override
   State<FlowerCard> createState() => _FlowerCardState();
@@ -146,9 +147,12 @@ class _FlowerCardState extends State<FlowerCard> {
                           child: const Text('구매 요청됨'),
                         )
                       : ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            await widget.onBuy();
+                            if (!mounted) return;
                             setState(() => _requested = true);
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(content: Text('구매 요청이 완료되었습니다')),
                             );
                           },

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../main.dart';
+import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/green_button.dart';
 
@@ -31,7 +31,7 @@ class _CollectScreenState extends State<CollectScreen> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_selectedLocation == null || _amount <= 0) {
       ScaffoldMessenger.of(
         context,
@@ -39,18 +39,20 @@ class _CollectScreenState extends State<CollectScreen> {
       return;
     }
 
-    context.read<EggBloomState>().addCollection(
+    await context.read<EggBloomState>().addCollection(
       location: _selectedLocation!,
       grams: _amount,
+      memo: _memoController.text.trim(),
     );
     _memoController.clear();
     setState(() {
       _submitted = true;
       _amount = 0;
     });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('수거 등록이 완료되었습니다')));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('수거 등록이 완료되었습니다. 관리자 확인 후 반영돼요')),
+    );
 
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
@@ -102,7 +104,7 @@ class _CollectScreenState extends State<CollectScreen> {
                           ),
                         ),
                         Text(
-                          '누적 기여량이 업데이트됐어요',
+                          '관리자 확인 후 기여량에 반영돼요',
                           style: TextStyle(
                             fontSize: 12,
                             color: Color(0xFF4A8A4E),
@@ -251,7 +253,7 @@ class _CollectScreenState extends State<CollectScreen> {
                     ],
                   ),
                   Text(
-                    '등록 후 누적량: ${totalGrams + _amount}g / 500g',
+                    '현재 승인 누적량: ${totalGrams}g / 500g · 신청 후 승인 대기',
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppTheme.primaryGreen,

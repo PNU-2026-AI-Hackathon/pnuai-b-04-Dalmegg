@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../main.dart';
+import '../../models/collection_record.dart';
+import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/contribution_card.dart';
 
@@ -98,8 +99,8 @@ class MyScreen extends StatelessWidget {
                   children: [
                     _StatBox(
                       emoji: '🔄',
-                      value: '${state.collectionRecords.length}회',
-                      label: '참여 횟수',
+                      value: '${state.contributionCount}회',
+                      label: '승인 수거',
                     ),
                     const SizedBox(width: 8),
                     _StatBox(
@@ -116,6 +117,24 @@ class MyScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
+                if (state.pendingContributionCount > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.pinkSurface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '승인 대기 수거 신청 ${state.pendingContributionCount}건',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.warmBlack,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 const Text(
                   '수거 참여 내역',
                   style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
@@ -163,12 +182,17 @@ class _HistoryCard extends StatelessWidget {
               record.location,
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
-            subtitle: Text(record.date, style: const TextStyle(fontSize: 11)),
+            subtitle: Text(
+              '${record.date} · ${record.status.label}',
+              style: const TextStyle(fontSize: 11),
+            ),
             trailing: Text(
               '+${record.grams}g',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w900,
-                color: AppTheme.primaryGreen,
+                color: record.status == CollectionStatus.rejected
+                    ? AppTheme.mutedText
+                    : AppTheme.primaryGreen,
               ),
             ),
           );

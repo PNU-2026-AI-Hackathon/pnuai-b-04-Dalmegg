@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../main.dart';
+import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/flower_card.dart';
 
@@ -42,7 +42,11 @@ class MarketScreen extends StatelessWidget {
           ...flowers.map(
             (flower) => Padding(
               padding: const EdgeInsets.only(bottom: 14),
-              child: FlowerCard(flower: flower),
+              child: FlowerCard(
+                flower: flower,
+                onBuy: () =>
+                    context.read<EggBloomState>().requestFlowerOrder(flower),
+              ),
             ),
           ),
         ],
