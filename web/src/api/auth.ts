@@ -1,4 +1,4 @@
-import { apiRequest, clearAuthTokens, getRefreshToken, setAuthTokens } from './client'
+import { apiRequest, clearAuthTokens, getAccessToken, getRefreshToken, setAuthTokens } from './client'
 import type { AdminUserRead, TokenResponse } from './types'
 
 export async function registerAdmin(input: { email: string; password: string; full_name: string }) {
@@ -24,7 +24,13 @@ export function getAdminMe() {
 }
 
 export async function logoutAdmin() {
+  const accessToken = getAccessToken()
   const refreshToken = getRefreshToken()
+
+  if (!accessToken) {
+    clearAuthTokens()
+    return
+  }
 
   try {
     await apiRequest<void>('/api/admin/auth/logout', {

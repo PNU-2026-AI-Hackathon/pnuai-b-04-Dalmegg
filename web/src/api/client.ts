@@ -105,6 +105,14 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
 
     if (accessToken) {
       requestHeaders.set('Authorization', `Bearer ${accessToken}`)
+    } else if (await refreshAccessToken()) {
+      const refreshedAccessToken = getAccessToken()
+
+      if (refreshedAccessToken) {
+        requestHeaders.set('Authorization', `Bearer ${refreshedAccessToken}`)
+      }
+    } else {
+      throw new ApiError(401, 'Missing access token.')
     }
   }
 

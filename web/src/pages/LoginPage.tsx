@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 import { ROUTES } from '../constants/routes'
+import { operatorAccounts } from '../mock/operators'
 import { useAuthStore } from '../store/useAuthStore'
 
 interface LoginLocationState {
@@ -10,6 +11,8 @@ interface LoginLocationState {
     pathname?: string
   }
 }
+
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -137,6 +140,27 @@ export function LoginPage() {
             <div className="mt-7 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-500">
               처음 이용하는 운영자는 회원가입에서 계정과 담당 운영 공간을 먼저 등록해주세요.
             </div>
+            {USE_MOCKS && (
+              <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                <p className="text-xs font-extrabold text-emerald-800">테스트 계정</p>
+                <div className="mt-3 space-y-2">
+                  {operatorAccounts.map((account) => (
+                    <button
+                      key={account.id}
+                      type="button"
+                      onClick={() => {
+                        setEmail(account.email)
+                        setPassword(account.password)
+                      }}
+                      className="w-full rounded-xl border border-emerald-100 bg-white px-3 py-2 text-left text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
+                    >
+                      <span className="block text-slate-900">{account.shop_name}</span>
+                      <span className="mt-0.5 block">{account.email} / {account.password}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         </div>
       </div>

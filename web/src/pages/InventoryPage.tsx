@@ -1,7 +1,7 @@
-import { Flower2, ImageIcon, ImagePlus, LayoutGrid, List, Pencil, Plus, Search, X } from 'lucide-react'
+import { Flower2, ImageIcon, ImagePlus, LayoutGrid, List, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
-import { createFlower, listFlowers, updateFlower as updateFlowerApi } from '../api/flowers'
-import { getAssetUrl } from '../api/client'
+import { createFlower, deleteFlower as deleteFlowerApi, listFlowers, updateFlower as updateFlowerApi } from '../api/flowers'
+import { ApiError, getAssetUrl } from '../api/client'
 import { Modal } from '../components/Modal'
 import { flowerInventoryItems } from '../mock/dashboard'
 import { useAuthStore } from '../store/useAuthStore'
@@ -18,6 +18,7 @@ type StoredFlowerInventoryItem = Partial<FlowerInventoryItem> & {
 }
 
 const INVENTORY_STORAGE_KEY = 'dalmegg.flowerInventory'
+const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 const statusStyle: Record<InventoryStatus, { label: string; className: string }> = {
   sufficient: { label: '재고충분', className: 'bg-emerald-50 text-emerald-700' },
@@ -62,6 +63,36 @@ function readStoredInventory(): FlowerInventoryItem[] {
   } catch {
     window.localStorage.removeItem(INVENTORY_STORAGE_KEY)
     return flowerInventoryItems
+  }
+}
+
+function canUseLocalInventory(error: unknown) {
+  return USE_MOCKS || !(error instanceof ApiError) || error.status >= 500
+}
+
+function createLocalFlower(data: FlowerFormData, shopId: number): FlowerInventoryItem {
+  return {
+    id: Date.now(),
+    shop_id: shopId,
+    name: data.name,
+    description: data.description,
+    color: data.color,
+    price: Math.max(0, data.price),
+    stock_quantity: Math.max(0, data.stock_quantity),
+    image_url: data.image_url,
+  }
+}
+
+function updateLocalFlower(current: FlowerInventoryItem, data: FlowerFormData): FlowerInventoryItem {
+  return {
+    ...current,
+    shop_id: data.shop_id || current.shop_id,
+    name: data.name,
+    description: data.description,
+    color: data.color,
+    price: Math.max(0, data.price),
+    stock_quantity: Math.max(0, data.stock_quantity),
+    image_url: data.image_url ?? current.image_url,
   }
 }
 
@@ -177,7 +208,7 @@ function FlowerForm({ initial, defaultShopId, onSubmit, onClose }: FlowerFormPro
             </label>
             <label className="block">
               <span className="form-label">가격</span>
-              <input required min="0" step="100" type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="form-input" placeholder="0" />
+              <input required min="0" step="1" type="number" value={price} onChange={(event) => setPrice(event.target.value)} className="form-input" placeholder="0" />
             </label>
           </div>
 
@@ -211,7 +242,9 @@ export function InventoryPage() {
   const [viewMode, setViewMode] = useState<InventoryViewMode>('list')
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null)
   const [editingItem, setEditingItem] = useState<FlowerInventoryItem | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<FlowerInventoryItem | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const filteredItems = useMemo(() => {
     const keyword = query.trim().toLowerCase()
@@ -255,21 +288,47 @@ export function InventoryPage() {
     setModalMode('edit')
   }
 
+  const openDelete = (item: FlowerInventoryItem) => {
+    setDeleteTarget(item)
+    setDeleteError(null)
+  }
+
   const closeModal = () => {
     setModalMode(null)
     setEditingItem(null)
     setFormError(null)
   }
 
+  const closeDeleteModal = () => {
+    setDeleteTarget(null)
+    setDeleteError(null)
+  }
+
   const addFlower = async (data: FlowerFormData) => {
+    const shopId = operator?.shop_id || data.shop_id || 1
+
+    if (USE_MOCKS) {
+      const localFlower = createLocalFlower(data, shopId)
+      setItems((current) => [localFlower, ...current])
+      closeModal()
+      return
+    }
+
     try {
       const createdFlower = await createFlower({
         ...data,
-        shop_id: operator?.shop_id || data.shop_id || 1,
+        shop_id: shopId,
       })
       setItems((current) => [createdFlower, ...current])
       closeModal()
-    } catch {
+    } catch (error) {
+      if (canUseLocalInventory(error)) {
+        const localFlower = createLocalFlower(data, shopId)
+        setItems((current) => [localFlower, ...current])
+        closeModal()
+        return
+      }
+
       setFormError('꽃 등록에 실패했습니다. 입력한 정보를 다시 확인해주세요.')
     }
   }
@@ -277,12 +336,50 @@ export function InventoryPage() {
   const updateFlower = async (data: FlowerFormData) => {
     if (!editingItem) return
 
+    if (USE_MOCKS) {
+      const localFlower = updateLocalFlower(editingItem, data)
+      setItems((current) => current.map((item) => item.id === editingItem.id ? localFlower : item))
+      closeModal()
+      return
+    }
+
     try {
       const updatedFlower = await updateFlowerApi(editingItem.id, data, editingItem.stock_quantity)
       setItems((current) => current.map((item) => item.id === editingItem.id ? updatedFlower : item))
       closeModal()
-    } catch {
+    } catch (error) {
+      if (canUseLocalInventory(error)) {
+        const localFlower = updateLocalFlower(editingItem, data)
+        setItems((current) => current.map((item) => item.id === editingItem.id ? localFlower : item))
+        closeModal()
+        return
+      }
+
       setFormError('꽃 정보 수정에 실패했습니다. 입력한 정보를 다시 확인해주세요.')
+    }
+  }
+
+  const deleteFlower = async () => {
+    if (!deleteTarget) return
+
+    if (USE_MOCKS) {
+      setItems((current) => current.filter((item) => item.id !== deleteTarget.id))
+      closeDeleteModal()
+      return
+    }
+
+    try {
+      await deleteFlowerApi(deleteTarget.id)
+      setItems((current) => current.filter((item) => item.id !== deleteTarget.id))
+      closeDeleteModal()
+    } catch (error) {
+      if (canUseLocalInventory(error)) {
+        setItems((current) => current.filter((item) => item.id !== deleteTarget.id))
+        closeDeleteModal()
+        return
+      }
+
+      setDeleteError('꽃 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.')
     }
   }
 
@@ -350,9 +447,14 @@ export function InventoryPage() {
                       <td>{item.price.toLocaleString()}원</td>
                       <td><span className={`status-badge ${status.className}`}>{status.label}</span></td>
                       <td className="text-right">
-                        <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
-                          <Pencil size={13} /> 수정
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
+                            <Pencil size={13} /> 수정
+                          </button>
+                          <button onClick={() => openDelete(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 px-3 py-2 text-xs font-bold text-rose-600 hover:border-rose-300 hover:bg-rose-50">
+                            <Trash2 size={13} /> 삭제
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -384,11 +486,16 @@ export function InventoryPage() {
                         <span className={`status-badge shrink-0 ${status.className}`}>{status.label}</span>
                       </div>
                       <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">{item.description || '설명이 없습니다.'}</p>
-                      <div className="mt-4 flex items-center justify-between">
+                      <div className="mt-4 flex items-center justify-between gap-3">
                         <p className="text-sm font-bold text-slate-600">재고 <span className="text-emerald-700">{item.stock_quantity.toLocaleString()}주</span></p>
-                        <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
-                          <Pencil size={13} /> 수정
-                        </button>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
+                            <Pencil size={13} /> 수정
+                          </button>
+                          <button onClick={() => openDelete(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 px-3 py-2 text-xs font-bold text-rose-600 hover:border-rose-300 hover:bg-rose-50">
+                            <Trash2 size={13} /> 삭제
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </article>
@@ -409,6 +516,22 @@ export function InventoryPage() {
             onSubmit={modalMode === 'add' ? addFlower : updateFlower}
             onClose={closeModal}
           />
+        </Modal>
+      )}
+
+      {deleteTarget && (
+        <Modal title="꽃 삭제" description="판매 목록에서 선택한 꽃을 삭제합니다." onClose={closeDeleteModal}>
+          {deleteError && <div className="mb-4 rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-700">{deleteError}</div>}
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-sm font-extrabold text-slate-900">{deleteTarget.name}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">삭제하면 꽃 재고 목록에서 더 이상 보이지 않습니다.</p>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <button type="button" onClick={closeDeleteModal} className="secondary-button">취소</button>
+            <button type="button" onClick={deleteFlower} className="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-rose-700">
+              <Trash2 size={15} /> 삭제
+            </button>
+          </div>
         </Modal>
       )}
     </div>
