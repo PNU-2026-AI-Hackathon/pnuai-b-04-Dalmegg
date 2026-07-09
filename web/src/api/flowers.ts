@@ -47,6 +47,12 @@ export function createFlower(input: FlowerFormInput) {
   })
 }
 
+export function deleteFlower(flowerId: number) {
+  return apiRequest<void>(`/api/flowers/${flowerId}`, {
+    method: 'DELETE',
+  })
+}
+
 export async function updateFlower(flowerId: number, input: FlowerFormInput, previousStockQuantity: number) {
   let updatedFlower = await apiRequest<FlowerInventoryItem>(`/api/flowers/${flowerId}`, {
     method: 'PATCH',

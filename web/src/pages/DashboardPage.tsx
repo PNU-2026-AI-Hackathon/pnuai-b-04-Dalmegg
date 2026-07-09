@@ -26,7 +26,7 @@ import { listFlowers } from '../api/flowers'
 import { collectionStats, flowerInventory, sensors } from '../mock/dashboard'
 import { useAuthStore } from '../store/useAuthStore'
 import { useNotificationStore } from '../store/useNotificationStore'
-import type { CollectionData, FlowerInventory } from '../types/dashboard'
+import type { AdminAlert, CollectionData, FlowerInventory } from '../types/dashboard'
 
 const kpiIcons = {
   temperature: Thermometer,
@@ -42,10 +42,18 @@ const kpiTones = {
   soil: 'bg-emerald-50 text-emerald-600',
 }
 
-const alertConfig = {
+type AlertConfig = { icon: typeof AlertTriangle; tone: string }
+
+const alertConfig: Record<'sensor' | 'reservation' | 'stock', AlertConfig> = {
   sensor: { icon: AlertTriangle, tone: 'bg-rose-50 text-rose-600' },
   reservation: { icon: CalendarCheck2, tone: 'bg-sky-50 text-sky-600' },
   stock: { icon: PackageX, tone: 'bg-amber-50 text-amber-600' },
+}
+
+const defaultAlertConfig: AlertConfig = { icon: AlertTriangle, tone: 'bg-slate-100 text-slate-600' }
+
+function getAlertConfig(type: AdminAlert['type']) {
+  return type in alertConfig ? alertConfig[type as keyof typeof alertConfig] : defaultAlertConfig
 }
 
 export function DashboardPage() {
@@ -131,7 +139,7 @@ export function DashboardPage() {
         <div><h2 className="section-title">최근 알림</h2><p className="section-description">운영 확인이 필요한 새로운 소식</p></div>
         <div className="mt-5 divide-y divide-slate-100">
           {alerts.map((alert) => {
-            const { icon: Icon, tone } = alertConfig[alert.type]
+            const { icon: Icon, tone } = getAlertConfig(alert.type)
             return (
               <button
                 key={alert.id}

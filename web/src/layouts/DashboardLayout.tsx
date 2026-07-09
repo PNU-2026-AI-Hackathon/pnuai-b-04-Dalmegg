@@ -32,10 +32,18 @@ const navigation = [
   { label: '계란껍질 수거 현황', path: ROUTES.eggShell, icon: Egg },
 ]
 
-const alertConfig: Record<AdminAlert['type'], { icon: typeof AlertTriangle; tone: string }> = {
+type AlertConfig = { icon: typeof AlertTriangle; tone: string }
+
+const alertConfig: Record<'sensor' | 'reservation' | 'stock', AlertConfig> = {
   sensor: { icon: AlertTriangle, tone: 'bg-rose-50 text-rose-600' },
   reservation: { icon: CalendarDays, tone: 'bg-sky-50 text-sky-600' },
   stock: { icon: PackageX, tone: 'bg-amber-50 text-amber-600' },
+}
+
+const defaultAlertConfig: AlertConfig = { icon: AlertTriangle, tone: 'bg-slate-100 text-slate-600' }
+
+function getAlertConfig(type: AdminAlert['type']) {
+  return type in alertConfig ? alertConfig[type as keyof typeof alertConfig] : defaultAlertConfig
 }
 
 const latestMonthlyCollection = monthlyCollectionTrend[monthlyCollectionTrend.length - 1]
@@ -163,7 +171,7 @@ export function DashboardLayout() {
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     {alerts.map((alert) => {
-                      const { icon: Icon, tone } = alertConfig[alert.type]
+                      const { icon: Icon, tone } = getAlertConfig(alert.type)
                       return (
                         <button
                           key={alert.id}
