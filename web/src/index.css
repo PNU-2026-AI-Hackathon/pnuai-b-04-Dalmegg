@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+:root {
+  font-family: var(--font-sans);
+  color: #334155;
+  background: #f6f8f7;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+.dashboard-card {
+  border: 1px solid rgb(226 232 240 / 0.8);
+  border-radius: 1.25rem;
+  background: white;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.02), 0 8px 30px rgb(15 23 42 / 0.025);
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #0f172a;
+}
+
+.section-description {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: #047857;
+}
+
+.landing-title {
+  margin-top: 1rem;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  color: #0f172a;
+}
+
+.landing-description {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #64748b;
+}
+
+.page-title {
+  margin-top: 0.25rem;
+  font-size: clamp(1.5rem, 4vw, 1.875rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #0f172a;
+}
+
+.page-description {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.form-label {
+  margin-bottom: 0.5rem;
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.form-input {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: white;
+  padding: 0.75rem 0.875rem;
+  font-size: 0.875rem;
+  color: #334155;
+  outline: none;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+.form-input:focus {
+  border-color: #34d399;
+  box-shadow: 0 0 0 3px rgb(167 243 208 / 0.45);
+}
+
+.primary-button,
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.primary-button {
+  background: #047857;
+  color: white;
+}
+
+.primary-button:hover {
+  background: #065f46;
+}
+
+.secondary-button {
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.8125rem;
+}
+
+.data-table th {
+  background: #f8fafc;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.data-table td {
+  border-top: 1px solid #f1f5f9;
+  padding: 1rem 1.25rem;
+  color: #475569;
+}
+
+.data-table tbody tr:hover {
+  background: rgb(248 250 252 / 0.65);
+}
+
+.status-badge {
+  display: inline-flex;
+  border-radius: 9999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+}
+
+.detail-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.detail-value {
+  margin-top: 0.25rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  color: #064e3b;
+  background: #a7f3d0;
+}

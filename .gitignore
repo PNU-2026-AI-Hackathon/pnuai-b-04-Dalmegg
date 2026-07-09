@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+.vite/
+
+# Test and coverage output
+coverage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Unity
+unity-simulator/[Ll]ibrary/
+unity-simulator/[Tt]emp/
+unity-simulator/[Oo]bj/
+unity-simulator/[Bb]uild/
+unity-simulator/[Bb]uilds/
+unity-simulator/[Ll]ogs/
+unity-simulator/[Uu]ser[Ss]ettings/
+unity-simulator/MemoryCaptures/
+unity-simulator/Recordings/
+unity-simulator/*.csproj
+unity-simulator/*.sln
+unity-simulator/*.user
+unity-simulator/*.userprefs
+unity-simulator/*.pidb
+unity-simulator/*.booproj
+unity-simulator/*.svd
+unity-simulator/*.pdb
+unity-simulator/*.mdb
+unity-simulator/*.opendb
+unity-simulator/*.VC.db
+unity-simulator/sysinfo.txt
+unity-simulator/*.apk
+unity-simulator/*.aab
+unity-simulator/*.unitypackage
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor and IDE files
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Misc
+*.local
