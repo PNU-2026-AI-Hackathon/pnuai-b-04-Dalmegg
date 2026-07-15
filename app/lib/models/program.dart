@@ -47,7 +47,9 @@ class Program {
     return Program(
       id: json['program_id'] as int,
       title: json['program_title'] as String? ?? '예약 프로그램',
-      date: _formatDate(json['program_date'] as String? ?? ''),
+      date: _formatDate(
+        json['program_date'] as String? ?? json['starts_at'] as String? ?? '',
+      ),
       location: json['location'] as String? ?? '제휴 공간',
       price: '${json['total_amount'] ?? 0}원',
       description: '예약 상태: ${json['status'] ?? 'reserved'}',

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/collection_record.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_illustration.dart';
 import '../../widgets/contribution_card.dart';
 
 class MyScreen extends StatelessWidget {
@@ -41,7 +42,10 @@ class MyScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: const Center(
-                      child: Text('👩‍🌾', style: TextStyle(fontSize: 30)),
+                      child: AppIllustration(
+                        type: IllustrationType.sprout,
+                        size: 50,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -87,7 +91,7 @@ class MyScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
-                      '🌸 꽃 리워드를 받을 수 있어요!',
+                      '꽃 리워드를 받을 수 있어요!',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: AppTheme.primaryGreen,
@@ -98,19 +102,19 @@ class MyScreen extends StatelessWidget {
                 Row(
                   children: [
                     _StatBox(
-                      emoji: '🔄',
+                      illustration: IllustrationType.recycle,
                       value: '${state.contributionCount}회',
                       label: '승인 수거',
                     ),
                     const SizedBox(width: 8),
                     _StatBox(
-                      emoji: '🥚',
+                      illustration: IllustrationType.egg,
                       value: '${state.totalGrams}g',
                       label: '누적 기여',
                     ),
                     const SizedBox(width: 8),
                     _StatBox(
-                      emoji: '🌻',
+                      illustration: IllustrationType.calendar,
                       value: '${state.reservations.length}건',
                       label: '예약 체험',
                     ),
@@ -176,7 +180,9 @@ class _HistoryCard extends StatelessWidget {
                 color: AppTheme.lightGreen,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Center(child: Text('🥚')),
+              child: const Center(
+                child: AppIllustration(type: IllustrationType.egg, size: 28),
+              ),
             ),
             title: Text(
               record.location,
@@ -232,7 +238,12 @@ class _BookingCard extends StatelessWidget {
                 color: const Color(0xFFFFFDE7),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Center(child: Text('🌻')),
+              child: const Center(
+                child: AppIllustration(
+                  type: IllustrationType.flowerClass,
+                  size: 28,
+                ),
+              ),
             ),
             title: Text(
               program.title,
@@ -266,12 +277,12 @@ class _BookingCard extends StatelessWidget {
 
 class _StatBox extends StatelessWidget {
   const _StatBox({
-    required this.emoji,
+    required this.illustration,
     required this.value,
     required this.label,
   });
 
-  final String emoji;
+  final IllustrationType illustration;
   final String value;
   final String label;
 
@@ -283,7 +294,7 @@ class _StatBox extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 14),
           child: Column(
             children: [
-              Text(emoji, style: const TextStyle(fontSize: 22)),
+              AppIllustration(type: illustration, size: 28),
               const SizedBox(height: 4),
               Text(
                 value,

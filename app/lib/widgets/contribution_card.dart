@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'app_illustration.dart';
 import 'progress_bar_widget.dart';
 
 class ContributionCard extends StatelessWidget {
@@ -28,22 +29,39 @@ class ContributionCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: AppTheme.lightGreen,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.eco,
-                    size: 18,
-                    color: AppTheme.primaryGreen,
+                  child: const AppIllustration(
+                    type: IllustrationType.egg,
+                    size: 30,
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  '내 계란껍질 기여량',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '내 계란껍질 기여량',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '승인 완료된 수거량 기준',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.mutedText,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

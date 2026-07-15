@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_illustration.dart';
 import '../../widgets/program_card.dart';
 
 class ExperienceScreen extends StatelessWidget {
@@ -13,24 +14,43 @@ class ExperienceScreen extends StatelessWidget {
     final programs = context.watch<EggBloomState>().programs;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('꽃꾸 체험 예약 🎨')),
+      appBar: AppBar(title: const Text('꽃꾸 체험 예약')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.lightGreen,
-              borderRadius: BorderRadius.circular(14),
+              gradient: const LinearGradient(
+                colors: [AppTheme.purpleBg, AppTheme.lightGreen],
+              ),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: const Row(
               children: [
-                Icon(Icons.calendar_month, color: AppTheme.primaryGreen),
-                SizedBox(width: 8),
+                AppIllustration(type: IllustrationType.calendar, size: 62),
+                SizedBox(width: 14),
                 Expanded(
-                  child: Text(
-                    '수거 참여로 이어진 순환 플라워팜 체험 프로그램을 예약해보세요.',
-                    style: TextStyle(fontSize: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '순환 플라워팜 체험',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.warmBlack,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '계란껍질 비료로 자란 꽃을 직접 꾸미고 배워보세요.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.mutedText,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

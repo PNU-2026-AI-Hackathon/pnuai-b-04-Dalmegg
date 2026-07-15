@@ -22,6 +22,11 @@ class AuthTokens {
 }
 
 abstract class AuthRepository {
+  Future<void> register({
+    required String email,
+    required String password,
+    required String fullName,
+  });
   Future<AuthTokens> login({required String email, required String password});
   Future<void> logout();
 }
@@ -34,6 +39,18 @@ class ApiAuthRepository implements AuthRepository {
 
   final ApiClient apiClient;
   final TokenStorage tokenStorage;
+
+  @override
+  Future<void> register({
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    await apiClient.postJson(
+      '/api/auth/register',
+      body: {'email': email, 'password': password, 'full_name': fullName},
+    );
+  }
 
   @override
   Future<AuthTokens> login({

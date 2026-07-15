@@ -9,6 +9,11 @@ abstract class TokenStorage {
 }
 
 class MemoryTokenStorage implements TokenStorage {
+  MemoryTokenStorage({String? accessToken, String? refreshToken})
+    : this._(accessToken, refreshToken);
+
+  MemoryTokenStorage._(this._accessToken, this._refreshToken);
+
   String? _accessToken;
   String? _refreshToken;
 

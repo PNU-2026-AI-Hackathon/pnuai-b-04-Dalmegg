@@ -5,6 +5,7 @@ import '../../models/flower.dart';
 import '../../models/program.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_illustration.dart';
 import '../../widgets/contribution_card.dart';
 import '../../widgets/grade_card.dart';
 import '../../widgets/section_header.dart';
@@ -57,17 +58,16 @@ class HomeScreen extends StatelessWidget {
                           color: Colors.white24,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
-                          Icons.local_florist,
-                          size: 18,
-                          color: Colors.white,
+                        child: const AppIllustration(
+                          type: IllustrationType.sprout,
+                          size: 28,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
                   const Text(
-                    '오늘도 자원순환에\n참여해볼까요? 🌱',
+                    '오늘도 자원순환에\n참여해볼까요?',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -173,7 +173,10 @@ class _MiniFlowerCard extends StatelessWidget {
                 top: Radius.circular(16),
               ),
             ),
-            child: Text(flower.emoji, style: const TextStyle(fontSize: 42)),
+            child: AppIllustration(
+              type: illustrationForFlower(flower.name, flower.emoji),
+              size: 70,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
@@ -230,9 +233,9 @@ class _FeaturedProgramCard extends StatelessWidget {
               color: AppTheme.lightGreen,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
-              Icons.palette_outlined,
-              color: AppTheme.primaryGreen,
+            child: const AppIllustration(
+              type: IllustrationType.flowerClass,
+              size: 48,
             ),
           ),
           const SizedBox(width: 12),

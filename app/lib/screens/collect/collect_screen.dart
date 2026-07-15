@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_illustration.dart';
 import '../../widgets/green_button.dart';
+import '../../widgets/progress_bar_widget.dart';
 
 class CollectScreen extends StatefulWidget {
   const CollectScreen({super.key});
@@ -67,15 +69,54 @@ class _CollectScreenState extends State<CollectScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('수거 참여 등록'),
+        title: const Text('수거 등록'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Divider(height: 1, color: Colors.grey.shade200),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppTheme.lightGreen, AppTheme.pinkSurface],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              children: [
+                AppIllustration(type: IllustrationType.collectionBox, size: 62),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '수거함에 제출한 계란껍질을 등록해요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.warmBlack,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        '관리자 승인 후 누적 기여량과 포인트에 반영됩니다.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.mutedText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
           if (_submitted) ...[
             Container(
               padding: const EdgeInsets.all(14),
@@ -118,144 +159,186 @@ class _CollectScreenState extends State<CollectScreen> {
             ),
             const SizedBox(height: 14),
           ],
-          _label('수거 장소 선택'),
-          DropdownButtonFormField<String>(
-            initialValue: _selectedLocation,
-            hint: const Text('수거 장소를 선택하세요'),
-            decoration: const InputDecoration(),
-            items: _locations.map((location) {
-              return DropdownMenuItem(value: location, child: Text(location));
-            }).toList(),
-            onChanged: (value) => setState(() => _selectedLocation = value),
+          _FormCard(
+            title: '수거 장소',
+            child: DropdownButtonFormField<String>(
+              initialValue: _selectedLocation,
+              hint: const Text('수거 장소를 선택하세요'),
+              decoration: const InputDecoration(),
+              items: _locations.map((location) {
+                return DropdownMenuItem(value: location, child: Text(location));
+              }).toList(),
+              onChanged: (value) => setState(() => _selectedLocation = value),
+            ),
           ),
-          const SizedBox(height: 16),
-          _label('제출량 (g)'),
+          const SizedBox(height: 14),
           Card(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  _stepButton(Icons.remove, () {
-                    if (_amount >= 10) {
-                      setState(() => _amount -= 10);
-                    }
-                  }),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          '$_amount',
-                          style: const TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w900,
-                            color: AppTheme.primaryGreen,
-                          ),
-                        ),
-                        const Text(
-                          'g',
-                          style: TextStyle(color: AppTheme.mutedText),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _stepButton(
-                    Icons.add,
-                    () => setState(() => _amount += 10),
-                    primary: true,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            '10g 단위로 입력해요. 최소 30g 이상 권장',
-            style: TextStyle(fontSize: 11, color: AppTheme.mutedText),
-          ),
-          const SizedBox(height: 16),
-          _label('사진 첨부 (선택)'),
-          GestureDetector(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('사진 첨부는 다음 버전에서 연결됩니다')),
-              );
-            },
-            child: Container(
-              width: double.infinity,
-              height: 110,
-              decoration: BoxDecoration(
-                color: AppTheme.warmMuted.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey.shade300, width: 1.5),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.camera_alt_outlined,
-                    size: 28,
-                    color: AppTheme.mutedText,
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    '탭해서 사진 추가',
-                    style: TextStyle(fontSize: 13, color: AppTheme.mutedText),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _label('메모 (선택)'),
-          TextField(
-            controller: _memoController,
-            maxLines: 3,
-            decoration: const InputDecoration(hintText: '특이사항이 있으면 남겨주세요'),
-          ),
-          const SizedBox(height: 16),
-          if (_selectedLocation != null && _amount > 0) ...[
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppTheme.lightGreen,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.green.shade200),
-              ),
+              padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    '등록 예정 내역',
+                    '제출량',
                     style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF2D6A30),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.warmBlack,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      _stepButton(Icons.remove, () {
+                        if (_amount >= 10) {
+                          setState(() => _amount -= 10);
+                        }
+                      }),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(
+                              '$_amount',
+                              style: const TextStyle(
+                                fontSize: 40,
+                                fontWeight: FontWeight.w900,
+                                color: AppTheme.primaryGreen,
+                              ),
+                            ),
+                            const Text(
+                              'g',
+                              style: TextStyle(color: AppTheme.mutedText),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _stepButton(
+                        Icons.add,
+                        () => setState(() => _amount += 10),
+                        primary: true,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  ProgressBarWidget(value: _amount / 500),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Text(
-                          _selectedLocation!,
-                          style: const TextStyle(fontSize: 13),
+                      const Text(
+                        '10g 단위 · 최소 30g 이상 권장',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.mutedText,
                         ),
                       ),
                       Text(
-                        '+${_amount}g',
+                        '예상 +${(_amount / 2).round()}P',
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF2D6A30),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.primaryGreen,
                         ),
                       ),
                     ],
                   ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _FormCard(
+            title: '사진 첨부',
+            caption: '선택 사항',
+            child: GestureDetector(
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('사진 첨부는 다음 버전에서 연결됩니다')),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                height: 112,
+                decoration: BoxDecoration(
+                  color: AppTheme.warmMuted.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.warmBorder),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AppIllustration(type: IllustrationType.egg, size: 44),
+                    SizedBox(height: 6),
+                    Text(
+                      '탭해서 사진 추가',
+                      style: TextStyle(fontSize: 13, color: AppTheme.mutedText),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _FormCard(
+            title: '메모',
+            caption: '선택 사항',
+            child: TextField(
+              controller: _memoController,
+              maxLines: 3,
+              decoration: const InputDecoration(hintText: '특이사항이 있으면 남겨주세요'),
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (_selectedLocation != null && _amount > 0) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.lightGreen,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppTheme.greenPale),
+              ),
+              child: Row(
+                children: [
+                  const AppIllustration(
+                    type: IllustrationType.recycle,
+                    size: 42,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '등록 예정 내역',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.primaryGreen,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _selectedLocation!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          '현재 승인 누적량: ${totalGrams}g · 신청 후 승인 대기',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.mutedText,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   Text(
-                    '현재 승인 누적량: ${totalGrams}g / 500g · 신청 후 승인 대기',
+                    '+${_amount}g',
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
                       color: AppTheme.primaryGreen,
                     ),
                   ),
@@ -264,20 +347,12 @@ class _CollectScreenState extends State<CollectScreen> {
             ),
             const SizedBox(height: 14),
           ],
-          GreenButton(label: '수거 참여 등록하기 🌱', onPressed: _submit),
+          GreenButton(label: '수거 참여 등록하기', onPressed: _submit),
           const SizedBox(height: 24),
         ],
       ),
     );
   }
-
-  Widget _label(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(
-      text,
-      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-    ),
-  );
 
   Widget _stepButton(
     IconData icon,
@@ -297,6 +372,51 @@ class _CollectScreenState extends State<CollectScreen> {
           icon,
           color: primary ? Colors.white : AppTheme.warmBlack,
           size: 18,
+        ),
+      ),
+    );
+  }
+}
+
+class _FormCard extends StatelessWidget {
+  const _FormCard({required this.title, required this.child, this.caption});
+
+  final String title;
+  final String? caption;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (caption != null) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    caption!,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.mutedText,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            child,
+          ],
         ),
       ),
     );

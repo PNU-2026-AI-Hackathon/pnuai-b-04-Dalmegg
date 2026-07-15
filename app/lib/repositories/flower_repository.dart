@@ -4,17 +4,18 @@ import '../core/api_client.dart';
 import '../models/flower.dart';
 
 abstract class FlowerRepository {
-  Future<List<Flower>> fetchFlowers();
+  Future<List<Flower>> fetchFlowers({int? shopId});
 }
 
 class MockFlowerRepository implements FlowerRepository {
   const MockFlowerRepository();
 
   @override
-  Future<List<Flower>> fetchFlowers() async {
-    return const [
+  Future<List<Flower>> fetchFlowers({int? shopId}) async {
+    final flowers = const [
       Flower(
         id: 1,
+        shopId: 1,
         name: '미니 거베라',
         price: '5,200원',
         stock: 14,
@@ -25,6 +26,7 @@ class MockFlowerRepository implements FlowerRepository {
       ),
       Flower(
         id: 2,
+        shopId: 1,
         name: '봄 튤립',
         price: '6,800원',
         stock: 8,
@@ -35,6 +37,7 @@ class MockFlowerRepository implements FlowerRepository {
       ),
       Flower(
         id: 3,
+        shopId: 2,
         name: '프리미엄 장미',
         price: '8,500원',
         stock: 5,
@@ -45,6 +48,7 @@ class MockFlowerRepository implements FlowerRepository {
       ),
       Flower(
         id: 4,
+        shopId: 2,
         name: '프리지아',
         price: '4,500원',
         stock: 20,
@@ -54,6 +58,11 @@ class MockFlowerRepository implements FlowerRepository {
         bgColor: Color(0xFFFFFDE7),
       ),
     ];
+
+    if (shopId == null) {
+      return flowers;
+    }
+    return flowers.where((flower) => flower.shopId == shopId).toList();
   }
 }
 
@@ -63,8 +72,11 @@ class ApiFlowerRepository implements FlowerRepository {
   final ApiClient apiClient;
 
   @override
-  Future<List<Flower>> fetchFlowers() async {
-    final list = await apiClient.getList('/api/flowers');
+  Future<List<Flower>> fetchFlowers({int? shopId}) async {
+    final path = shopId == null
+        ? '/api/flowers'
+        : '/api/flowers?shop_id=$shopId';
+    final list = await apiClient.getList(path);
     return list.whereType<Map<String, dynamic>>().map(Flower.fromJson).toList();
   }
 }

@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../models/collection_record.dart';
 import '../models/flower.dart';
 import '../models/program.dart';
+import '../models/shop.dart';
 import '../repositories/collection_repository.dart';
 import '../repositories/flower_repository.dart';
 import '../repositories/order_repository.dart';
 import '../repositories/program_repository.dart';
 import '../repositories/reservation_repository.dart';
+import '../repositories/shop_repository.dart';
 import '../repositories/user_repository.dart';
 
 class EggBloomState extends ChangeNotifier {
@@ -19,6 +21,7 @@ class EggBloomState extends ChangeNotifier {
         const MockOrderRepository(),
         const MockProgramRepository(),
         const MockReservationRepository(),
+        const MockShopRepository(),
       );
 
   EggBloomState.withRepositories({
@@ -28,6 +31,7 @@ class EggBloomState extends ChangeNotifier {
     required OrderRepository orderRepository,
     required ProgramRepository programRepository,
     required ReservationRepository reservationRepository,
+    required ShopRepository shopRepository,
   }) : this._internal(
          userRepository,
          collectionRepository,
@@ -35,6 +39,7 @@ class EggBloomState extends ChangeNotifier {
          orderRepository,
          programRepository,
          reservationRepository,
+         shopRepository,
        );
 
   EggBloomState._internal(
@@ -44,6 +49,7 @@ class EggBloomState extends ChangeNotifier {
     this._orderRepository,
     this._programRepository,
     this._reservationRepository,
+    this._shopRepository,
   ) {
     loadInitialData();
   }
@@ -56,6 +62,7 @@ class EggBloomState extends ChangeNotifier {
   final OrderRepository _orderRepository;
   final ProgramRepository _programRepository;
   final ReservationRepository _reservationRepository;
+  final ShopRepository _shopRepository;
 
   String userName = '김순환';
   int totalGrams = 0;
@@ -70,6 +77,7 @@ class EggBloomState extends ChangeNotifier {
   final List<Program> reservations = [];
   final List<Flower> flowers = [];
   final List<Program> programs = [];
+  final List<Shop> shops = [];
 
   int get remainingGrams {
     final remaining = rewardGoalGrams - totalGrams;
@@ -90,6 +98,7 @@ class EggBloomState extends ChangeNotifier {
         _flowerRepository.fetchFlowers(),
         _programRepository.fetchPrograms(),
         _reservationRepository.fetchMyReservations(),
+        _shopRepository.fetchShops(),
       ]);
 
       final user = results[0] as UserSummary;
@@ -112,6 +121,9 @@ class EggBloomState extends ChangeNotifier {
       reservations
         ..clear()
         ..addAll(results[4] as List<Program>);
+      shops
+        ..clear()
+        ..addAll(results[5] as List<Shop>);
     } catch (_) {
       errorMessage = '데이터를 불러오지 못했습니다.';
     } finally {
@@ -144,8 +156,24 @@ class EggBloomState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> requestFlowerOrder(Flower flower) async {
-    await _orderRepository.createOrder(flowerId: flower.id);
+  Future<void> requestFlowerOrder(
+    Flower flower, {
+    required int quantity,
+  }) async {
+    await requestFlowerOrderItems([
+      OrderItemRequest(flowerId: flower.id, quantity: quantity),
+    ]);
+  }
+
+  Future<void> requestFlowerOrderItems(List<OrderItemRequest> items) async {
+    if (items.isEmpty) {
+      return;
+    }
+    await _orderRepository.createOrder(items: items);
+  }
+
+  Future<List<Flower>> fetchFlowersByShop(int shopId) {
+    return _flowerRepository.fetchFlowers(shopId: shopId);
   }
 
   Future<void> reserveProgram(Program program) async {

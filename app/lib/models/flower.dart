@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class Flower {
   const Flower({
     required this.id,
+    required this.shopId,
     required this.name,
     required this.price,
     required this.location,
@@ -13,6 +14,7 @@ class Flower {
   });
 
   final int id;
+  final int shopId;
   final String name;
   final String price;
   final String location;
@@ -24,6 +26,7 @@ class Flower {
   factory Flower.fromJson(Map<String, dynamic> json) {
     return Flower(
       id: json['id'] as int,
+      shopId: json['shop_id'] as int? ?? 0,
       name: json['name'] as String,
       price: '${json['price']}원',
       location:

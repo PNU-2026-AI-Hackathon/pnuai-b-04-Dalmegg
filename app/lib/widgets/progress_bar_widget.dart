@@ -12,11 +12,25 @@ class ProgressBarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(height),
-      child: LinearProgressIndicator(
-        value: value.clamp(0.0, 1.0),
-        minHeight: height,
-        backgroundColor: AppTheme.warmMuted,
-        valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+      child: SizedBox(
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const ColoredBox(color: AppTheme.warmMuted),
+            FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: value.clamp(0.0, 1.0),
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppTheme.primaryGreen, AppTheme.greenLight],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
