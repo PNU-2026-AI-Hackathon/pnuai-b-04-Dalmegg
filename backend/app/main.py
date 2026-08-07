@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+import asyncio
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -9,6 +10,7 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.db.base import Base
 from app.db.session import engine
+from app.mqtt.client import run_mqtt_listener
 
 
 @asynccontextmanager
@@ -17,7 +19,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if settings.create_tables_on_startup:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-    yield
+    mqtt_task = None
+    if settings.mqtt_enabled:
+        mqtt_task = asyncio.create_task(run_mqtt_listener(settings))
+    try:
+        yield
+    finally:
+        if mqtt_task is not None:
+            mqtt_task.cancel()
+            try:
+                await mqtt_task
+            except asyncio.CancelledError:
+                pass
 
 
 def create_app() -> FastAPI:

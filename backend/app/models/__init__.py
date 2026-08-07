@@ -13,6 +13,10 @@ from app.models.review import Review
 from app.models.revoked_token import RevokedToken
 from app.models.reward_redemption import RewardRedemption
 from app.models.shop import Shop
+from app.models.smart_farm_device import SmartFarmDevice
+from app.models.sensor_latest import SensorLatest
+from app.models.sensor_message_log import SensorMessageLog
+from app.models.sensor_reading import SensorReading
 from app.models.user import User
 from app.models.workshop_booking import WorkshopBooking
 from app.models.workshop_program import WorkshopProgram
@@ -33,6 +37,10 @@ __all__ = [
     "RevokedToken",
     "RewardRedemption",
     "Shop",
+    "SmartFarmDevice",
+    "SensorLatest",
+    "SensorMessageLog",
+    "SensorReading",
     "User",
     "WorkshopBooking",
     "WorkshopProgram",

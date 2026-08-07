@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.routes import (
     admin_auth,
     admin_orders,
+    admin_sensors,
     admin_workshops,
     auth,
     bouquet_orders,
@@ -27,6 +28,7 @@ api_router = APIRouter()
 api_router.include_router(auth.router)
 api_router.include_router(admin_auth.router)
 api_router.include_router(admin_orders.router)
+api_router.include_router(admin_sensors.router)
 api_router.include_router(admin_workshops.router)
 api_router.include_router(reservations.admin_router)
 api_router.include_router(bouquet_orders.admin_router)

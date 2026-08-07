@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     refresh_token_expire_minutes: int = 60 * 24 * 14
     create_tables_on_startup: bool = True
     upload_dir: str = str(BACKEND_DIR / "uploads")
+    mqtt_enabled: bool = False
+    mqtt_host: str = "localhost"
+    mqtt_port: int = 1883
+    mqtt_username: str | None = None
+    mqtt_password: str | None = None
+    mqtt_topic_prefix: str = "dalmegg/v1"
+    mqtt_history_interval_seconds: int = 60
 
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_file_encoding="utf-8", extra="ignore")
 
