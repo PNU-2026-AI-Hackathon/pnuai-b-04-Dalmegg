@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -64,3 +65,16 @@ class SensorLatestRead(BaseModel):
     received_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PumpCommandRequest(BaseModel):
+    state: Literal["on", "off"]
+
+
+class PumpCommandResponse(BaseModel):
+    farm_uid: str
+    device_uid: str
+    command: Literal["pump"] = "pump"
+    state: Literal["on", "off"]
+    topic: str
+    published: bool

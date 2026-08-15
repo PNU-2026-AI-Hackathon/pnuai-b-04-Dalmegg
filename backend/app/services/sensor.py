@@ -10,6 +10,7 @@ from app.models.sensor_latest import SensorLatest
 from app.models.sensor_message_log import SensorMessageLog
 from app.models.sensor_reading import SensorReading
 from app.models.smart_farm_device import SmartFarmDevice
+from app.models.telemetry_data import TelemetryData
 from app.schemas.sensor import SensorTelemetryPayload
 
 
@@ -98,7 +99,8 @@ async def handle_telemetry_message(
     farm_uid, device_uid = parse_telemetry_topic(topic, topic_prefix)
     try:
         raw_payload = payload.decode("utf-8") if isinstance(payload, bytes) else payload
-        telemetry = SensorTelemetryPayload.model_validate(json.loads(raw_payload))
+        payload_data = json.loads(raw_payload)
+        telemetry = SensorTelemetryPayload.model_validate(payload_data)
     except (json.JSONDecodeError, ValidationError) as exc:
         raise SensorTelemetryError("Invalid telemetry payload.") from exc
 
@@ -114,7 +116,18 @@ async def handle_telemetry_message(
     device = await get_or_create_device(db, farm_uid=farm_uid, device_uid=device_uid, seen_at=received_at)
     sensor_values = telemetry.model_dump(exclude={"measured_at"})
     latest_values = telemetry.model_dump(exclude={"measured_at"}, exclude_unset=True)
-    db.add(SensorMessageLog(message_id=telemetry.message_id, topic=topic, received_at=received_at))
+    db.add(SensorMessageLog(message_id=telemetry.message_id, topic=topic, payload=payload_data, received_at=received_at))
+    db.add(
+        TelemetryData(
+            device_id=device.id,
+            message_id=telemetry.message_id,
+            temperature_c=telemetry.temperature_c,
+            humidity_pct=telemetry.humidity_pct,
+            soil_moisture_pct=telemetry.soil_moisture_pct,
+            measured_at=measured_at,
+            received_at=received_at,
+        )
+    )
 
     latest_result = await db.execute(select(SensorLatest).where(SensorLatest.device_id == device.id))
     latest = latest_result.scalar_one_or_none()

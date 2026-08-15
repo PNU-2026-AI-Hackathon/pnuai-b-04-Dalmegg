@@ -17,6 +17,7 @@ from app.models.smart_farm_device import SmartFarmDevice
 from app.models.sensor_latest import SensorLatest
 from app.models.sensor_message_log import SensorMessageLog
 from app.models.sensor_reading import SensorReading
+from app.models.telemetry_data import TelemetryData
 from app.models.user import User
 from app.models.workshop_booking import WorkshopBooking
 from app.models.workshop_program import WorkshopProgram
@@ -41,6 +42,7 @@ __all__ = [
     "SensorLatest",
     "SensorMessageLog",
     "SensorReading",
+    "TelemetryData",
     "User",
     "WorkshopBooking",
     "WorkshopProgram",

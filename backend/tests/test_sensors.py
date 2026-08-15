@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import create_app
+from app.api.routes import farm_devices
 from app.models.sensor_latest import SensorLatest
 from app.models.sensor_reading import SensorReading
 from app.services.sensor import SensorTelemetryError, handle_telemetry_message
@@ -150,3 +151,30 @@ async def test_admin_can_read_latest_sensor_reading(tmp_path):
     assert response.json()["device"]["device_uid"] == "device-001"
 
     await engine.dispose()
+
+
+async def test_pump_command_endpoint_publishes_mqtt(monkeypatch):
+    published = {}
+
+    async def fake_publish_pump_command(settings, *, farm_uid: str, device_uid: str, state: str) -> None:
+        published["topic_prefix"] = settings.mqtt_topic_prefix
+        published["farm_uid"] = farm_uid
+        published["device_uid"] = device_uid
+        published["state"] = state
+
+    monkeypatch.setattr(farm_devices, "publish_pump_command", fake_publish_pump_command)
+
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/api/v1/farms/farm-001/devices/device-001/pump", json={"state": "on"})
+
+    assert response.status_code == 200
+    assert response.json()["published"] is True
+    assert response.json()["topic"] == "dalmegg/v1/farms/farm-001/devices/device-001/command"
+    assert published == {
+        "topic_prefix": "dalmegg/v1",
+        "farm_uid": "farm-001",
+        "device_uid": "device-001",
+        "state": "on",
+    }

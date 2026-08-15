@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 
 from app.core.config import Settings
@@ -7,6 +8,37 @@ from app.services.sensor import SensorTelemetryError, handle_telemetry_message
 
 
 logger = logging.getLogger(__name__)
+
+
+class MqttPublishError(RuntimeError):
+    pass
+
+
+async def publish_pump_command(
+    settings: Settings,
+    *,
+    farm_uid: str,
+    device_uid: str,
+    state: str,
+) -> None:
+    try:
+        import aiomqtt
+    except ImportError as exc:
+        raise MqttPublishError("aiomqtt is not installed.") from exc
+
+    topic = f"{settings.mqtt_topic_prefix.strip('/')}/farms/{farm_uid}/devices/{device_uid}/command"
+    payload = json.dumps({"command": "pump", "state": state}, separators=(",", ":"))
+
+    try:
+        async with aiomqtt.Client(
+            hostname=settings.mqtt_host,
+            port=settings.mqtt_port,
+            username=settings.mqtt_username,
+            password=settings.mqtt_password,
+        ) as client:
+            await client.publish(topic, payload=payload, qos=1)
+    except Exception as exc:
+        raise MqttPublishError("Failed to publish MQTT pump command.") from exc
 
 
 async def run_mqtt_listener(settings: Settings) -> None:

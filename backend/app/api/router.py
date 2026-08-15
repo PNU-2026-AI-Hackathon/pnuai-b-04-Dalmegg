@@ -11,6 +11,7 @@ from app.api.routes import (
     collections,
     dashboard,
     eco,
+    farm_devices,
     favorites,
     flowers,
     orders,
@@ -39,6 +40,7 @@ api_router.include_router(flowers.router)
 api_router.include_router(reviews.router)
 api_router.include_router(favorites.router)
 api_router.include_router(eco.router)
+api_router.include_router(farm_devices.router)
 api_router.include_router(collections.router)
 api_router.include_router(participants.router)
 api_router.include_router(dashboard.router)
