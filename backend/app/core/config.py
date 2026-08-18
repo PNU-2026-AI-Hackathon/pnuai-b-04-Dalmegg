@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     mqtt_password: str | None = None
     mqtt_topic_prefix: str = "dalmegg/v1"
     mqtt_history_interval_seconds: int = 60
+    cors_origins: str = "*"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_file_encoding="utf-8", extra="ignore")
 
