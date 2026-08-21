@@ -104,9 +104,14 @@ function readMockOperators(): OperatorAccount[] {
       return operatorAccounts
     }
 
-    return parsedValue
+    const storedAccounts = parsedValue
       .map((account) => normalizeAccount(account as LegacyOperatorAccount))
       .filter((account): account is OperatorAccount => account !== null)
+
+    const temporaryAccount = operatorAccounts.find((account) => account.email === 'test')
+    return temporaryAccount && !storedAccounts.some((account) => account.email === temporaryAccount.email)
+      ? [temporaryAccount, ...storedAccounts]
+      : storedAccounts
   } catch {
     window.localStorage.removeItem(MOCK_OPERATORS_STORAGE_KEY)
     return operatorAccounts
@@ -231,8 +236,18 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     set({ isAuthenticating: true, loginError: null })
 
+    // 개발·데모 환경에서 백엔드 상태와 관계없이 사용할 수 있는 운영자 체험 계정입니다.
+    const temporaryOperator = findMockOperator(normalizedEmail, password)
+    if (normalizedEmail === 'test' && temporaryOperator) {
+      const operator = toAuthOperator(temporaryOperator)
+      persistOperator(operator)
+      clearAuthTokens()
+      set({ operator, loginError: null, signupError: null, isAuthenticating: false })
+      return true
+    }
+
     if (USE_MOCKS) {
-      const mockOperator = findMockOperator(normalizedEmail, password)
+      const mockOperator = temporaryOperator
 
       if (!mockOperator) {
         set({ loginError: '이메일 또는 비밀번호를 다시 확인해주세요.', isAuthenticating: false })

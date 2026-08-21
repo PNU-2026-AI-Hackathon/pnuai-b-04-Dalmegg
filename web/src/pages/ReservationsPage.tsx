@@ -8,7 +8,7 @@ import type { Reservation, ReservationStatus } from '../types/dashboard'
 
 const statusStyle: Record<ReservationStatus, { label: string; className: string }> = {
   reserved: { label: '예약접수', className: 'bg-amber-50 text-amber-700' },
-  confirmed: { label: '확정', className: 'bg-emerald-50 text-emerald-700' },
+  confirmed: { label: '확정', className: 'bg-rose-50 text-rose-700' },
   completed: { label: '완료', className: 'bg-sky-50 text-sky-700' },
   cancelled: { label: '취소', className: 'bg-slate-100 text-slate-500' },
   no_show: { label: '미방문', className: 'bg-rose-50 text-rose-700' },
@@ -74,7 +74,7 @@ export function ReservationsPage() {
 
   return (
     <div className="mx-auto max-w-[1500px]">
-      <div><p className="text-sm font-bold text-emerald-600">EXPERIENCE RESERVATION</p><h1 className="page-title">체험 예약 관리</h1><p className="page-description">내 운영 공간에 접수된 프로그램 예약을 확인하고 관리하세요.</p></div>
+      <div><p className="text-sm font-bold text-rose-600">EXPERIENCE RESERVATION</p><h1 className="page-title">체험 예약 관리</h1><p className="page-description">내 운영 공간에 접수된 프로그램 예약을 확인하고 관리하세요.</p></div>
 
       <section className="dashboard-card mt-7 overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row">
@@ -103,7 +103,7 @@ export function ReservationsPage() {
                     <td>{reservation.participant_count}명</td>
                     <td>{reservation.total_amount.toLocaleString()}원</td>
                     <td><span className={`status-badge ${status.className}`}>{status.label}</span></td>
-                    <td className="text-right"><button onClick={() => setSelected(reservation)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700"><Eye size={14} /> 상세보기</button></td>
+                    <td className="text-right"><button onClick={() => setSelected(reservation)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-rose-300 hover:text-rose-700"><Eye size={14} /> 상세보기</button></td>
                   </tr>
                 )
               })}
@@ -115,8 +115,8 @@ export function ReservationsPage() {
 
       {selected && (
         <Modal title="예약 상세정보" description={`예약번호 #${selected.id}`} onClose={() => setSelected(null)}>
-          <div className="rounded-2xl bg-emerald-50 p-5">
-            <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-white text-emerald-700"><CalendarDays size={21} /></span><div><p className="font-extrabold text-slate-900">{selected.program_title}</p><p className="mt-0.5 text-xs text-emerald-700">{formatDateTime(selected.created_at)}</p></div></div>
+          <div className="rounded-2xl bg-rose-50 p-5">
+            <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-2xl bg-white text-rose-700"><CalendarDays size={21} /></span><div><p className="font-extrabold text-slate-900">{selected.program_title}</p><p className="mt-0.5 text-xs text-rose-700">{formatDateTime(selected.created_at)}</p></div></div>
           </div>
           <dl className="mt-5 grid grid-cols-2 gap-4 text-sm">
             <div><dt className="detail-label">예약자</dt><dd className="detail-value">{selected.user_full_name}</dd></div>

@@ -13,10 +13,10 @@ import { sensorHistory, sensors } from '../mock/dashboard'
 import type { SensorData } from '../types/dashboard'
 
 const sensorConfig = {
-  temperature: { icon: Thermometer, color: '#f97316', tone: 'bg-orange-50 text-orange-600' },
-  humidity: { icon: Droplets, color: '#0ea5e9', tone: 'bg-sky-50 text-sky-600' },
-  light: { icon: Lightbulb, color: '#f59e0b', tone: 'bg-amber-50 text-amber-600' },
-  soil: { icon: Waves, color: '#10b981', tone: 'bg-emerald-50 text-emerald-600' },
+  temperature: { icon: Thermometer, color: '#bf6d31' },
+  humidity: { icon: Droplets, color: '#357c92' },
+  light: { icon: Lightbulb, color: '#a76d20' },
+  soil: { icon: Waves, color: '#2f744e' },
 }
 
 const statusStyle = {
@@ -32,13 +32,9 @@ export function SensorMonitoringPage() {
 
   return (
     <div className="mx-auto max-w-[1500px]">
-      <div>
-        <p className="text-sm font-bold text-emerald-600">SMART FARM SENSOR</p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-slate-900 md:text-3xl">센서 모니터링</h1>
-        <p className="mt-2 text-sm text-slate-500">재배동 환경 센서의 현재값과 최근 24시간 변화를 확인하세요.</p>
-      </div>
+      <header className="border-b border-[#d9e0d7] pb-5"><p className="text-[11px] font-bold tracking-[.12em] text-rose-700">SMART FARM SENSOR</p><h1 className="mt-2 text-2xl font-semibold tracking-[-.045em] text-[#1d2921]">센서 모니터링</h1><p className="mt-1.5 text-[13px] text-slate-500">재배동 환경 센서의 현재값과 최근 24시간 변화를 확인하세요.</p></header>
 
-      <section className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="mt-5 grid divide-x divide-y divide-[#d9e0d7] overflow-hidden border border-[#d9e0d7] bg-[#d9e0d7] sm:grid-cols-2 xl:grid-cols-4 xl:divide-y-0">
         {sensors.map((sensor) => {
           const Icon = sensorConfig[sensor.id].icon
           const status = statusStyle[sensor.status]
@@ -47,28 +43,24 @@ export function SensorMonitoringPage() {
               type="button"
               key={sensor.id}
               onClick={() => setSelectedSensor(sensor.id)}
-              className={`dashboard-card p-5 text-left transition hover:-translate-y-0.5 ${selectedSensor === sensor.id ? 'border-emerald-300 ring-2 ring-emerald-100' : ''}`}
+              className={`bg-[#fffefa] p-4 text-left transition hover:bg-[#f4f7f1] ${selectedSensor === sensor.id ? 'bg-[#ebf1e9] shadow-[inset_0_-2px_0_#24734f]' : ''}`}
             >
-              <div className="flex items-start justify-between">
-                <div className={`grid size-11 place-items-center rounded-2xl ${sensorConfig[sensor.id].tone}`}><Icon size={21} /></div>
-                <span className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ring-1 ${status.className}`}>{status.label}</span>
-              </div>
-              <p className="mt-5 text-sm font-bold text-slate-600">{sensor.name}</p>
-              <p className="mt-1 text-3xl font-black tracking-tight text-slate-900">{sensor.value.toLocaleString()} <span className="text-sm text-slate-400">{sensor.unit}</span></p>
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px]">
-                <span className="text-slate-400">정상 {sensor.normalRange}</span><span className="text-slate-400">{sensor.updatedAt}</span>
+              <div className="flex items-center justify-between"><span className="flex items-center gap-2 text-xs font-semibold text-slate-600"><Icon size={15} style={{ color: sensorConfig[sensor.id].color }} /> {sensor.name}</span><span className={`text-[10px] font-bold ${status.className.split(' ')[1]}`}>{status.label}</span></div>
+              <p className="mt-4 text-2xl font-semibold tracking-[-.045em] tabular-nums text-[#233128]">{sensor.value.toLocaleString()} <span className="text-xs font-medium text-slate-500">{sensor.unit}</span></p>
+              <div className="mt-3 flex items-center justify-between border-t border-[#e2e7e0] pt-2.5 text-[10px]">
+                <span className="text-slate-500">기준 {sensor.normalRange}</span><span className="text-slate-400">{sensor.updatedAt}</span>
               </div>
             </button>
           )
         })}
       </section>
 
-      <section className="dashboard-card mt-5 p-5 md:p-6">
+      <section className="mt-7 border-t border-[#b9c7b9] pt-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div><h2 className="section-title">최근 24시간 {selected.name} 변화</h2><p className="section-description">2시간 간격 센서 측정값</p></div>
           <div className="flex flex-wrap gap-2">
             {sensors.map((sensor) => (
-              <button key={sensor.id} onClick={() => setSelectedSensor(sensor.id)} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${selectedSensor === sensor.id ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-500'}`}>{sensor.name}</button>
+            <button key={sensor.id} onClick={() => setSelectedSensor(sensor.id)} className={`border-b-2 px-2 py-1.5 text-xs font-semibold ${selectedSensor === sensor.id ? 'border-rose-700 text-rose-800' : 'border-transparent text-slate-500 hover:text-rose-700'}`}>{sensor.name}</button>
             ))}
           </div>
         </div>

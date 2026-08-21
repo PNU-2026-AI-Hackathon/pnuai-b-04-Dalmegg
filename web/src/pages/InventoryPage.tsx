@@ -21,7 +21,7 @@ const INVENTORY_STORAGE_KEY = 'dalmegg.flowerInventory'
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 const statusStyle: Record<InventoryStatus, { label: string; className: string }> = {
-  sufficient: { label: '재고충분', className: 'bg-emerald-50 text-emerald-700' },
+  sufficient: { label: '재고충분', className: 'bg-rose-50 text-rose-700' },
   low: { label: '재고부족', className: 'bg-amber-50 text-amber-700' },
   soldout: { label: '품절', className: 'bg-rose-50 text-rose-700' },
 }
@@ -387,7 +387,7 @@ export function InventoryPage() {
     <div className="mx-auto max-w-[1500px]">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-bold text-emerald-600">FLOWER INVENTORY</p>
+          <p className="text-sm font-bold text-rose-600">FLOWER INVENTORY</p>
           <h1 className="page-title">꽃 재고 관리</h1>
           <p className="page-description">판매 가능한 꽃의 이미지, 색상, 설명, 수량, 가격을 관리하세요.</p>
         </div>
@@ -407,7 +407,7 @@ export function InventoryPage() {
               type="button"
               onClick={() => setViewMode('list')}
               className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-extrabold transition ${
-                viewMode === 'list' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                viewMode === 'list' ? 'bg-white text-rose-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <List size={15} /> 리스트
@@ -416,7 +416,7 @@ export function InventoryPage() {
               type="button"
               onClick={() => setViewMode('grid')}
               className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-extrabold transition ${
-                viewMode === 'grid' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                viewMode === 'grid' ? 'bg-white text-rose-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <LayoutGrid size={15} /> 피드형
@@ -448,7 +448,7 @@ export function InventoryPage() {
                       <td><span className={`status-badge ${status.className}`}>{status.label}</span></td>
                       <td className="text-right">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
+                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-rose-300 hover:text-rose-700">
                             <Pencil size={13} /> 수정
                           </button>
                           <button onClick={() => openDelete(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 px-3 py-2 text-xs font-bold text-rose-600 hover:border-rose-300 hover:bg-rose-50">
@@ -487,9 +487,9 @@ export function InventoryPage() {
                       </div>
                       <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">{item.description || '설명이 없습니다.'}</p>
                       <div className="mt-4 flex items-center justify-between gap-3">
-                        <p className="text-sm font-bold text-slate-600">재고 <span className="text-emerald-700">{item.stock_quantity.toLocaleString()}주</span></p>
+                        <p className="text-sm font-bold text-slate-600">재고 <span className="text-rose-700">{item.stock_quantity.toLocaleString()}주</span></p>
                         <div className="flex shrink-0 items-center gap-2">
-                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
+                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-rose-300 hover:text-rose-700">
                             <Pencil size={13} /> 수정
                           </button>
                           <button onClick={() => openDelete(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 px-3 py-2 text-xs font-bold text-rose-600 hover:border-rose-300 hover:bg-rose-50">
