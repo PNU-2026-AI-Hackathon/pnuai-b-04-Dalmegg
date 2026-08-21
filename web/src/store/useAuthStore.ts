@@ -25,6 +25,7 @@ interface AuthState {
   isAuthenticating: boolean
   login: (email: string, password: string) => Promise<boolean>
   signup: (input: OperatorSignupInput) => Promise<boolean>
+  updateOperatorProfile: (input: Pick<AuthOperator, 'shop_name' | 'region'>) => void
   logout: () => Promise<void>
   clearLoginError: () => void
   clearSignupError: () => void
@@ -74,13 +75,24 @@ function readStoredOperator(): AuthOperator | null {
       return null
     }
 
-    if (!USE_MOCKS && !getAccessToken() && !getRefreshToken()) {
+    const normalizedAccount = normalizeAccount(JSON.parse(storedValue) as LegacyOperatorAccount)
+    if (!normalizedAccount) {
       window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
       return null
     }
 
-    const normalizedAccount = normalizeAccount(JSON.parse(storedValue) as LegacyOperatorAccount)
-    return normalizedAccount ? toAuthOperator(normalizedAccount) : null
+    // 임시 체험 계정은 API 토큰 없이 동작하므로, 운영자가 입력한 매장명도 유지합니다.
+    if (!USE_MOCKS && normalizedAccount.email !== 'test' && !getAccessToken() && !getRefreshToken()) {
+      window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
+      return null
+    }
+
+    if (normalizedAccount.email === 'test' && normalizedAccount.shop_name === '달멕 플라워') {
+      normalizedAccount.shop_name = '산지니 플라워'
+      persistOperator(toAuthOperator(normalizedAccount))
+    }
+
+    return toAuthOperator(normalizedAccount)
   } catch {
     window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
     return null
@@ -226,7 +238,7 @@ function buildOperatorFromShop(admin: AdminUserRead, shop: ShopRead): AuthOperat
   }
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   operator: readStoredOperator(),
   loginError: null,
   signupError: null,
@@ -349,6 +361,21 @@ export const useAuthStore = create<AuthState>((set) => ({
         return false
       }
     }
+  },
+  updateOperatorProfile: (input) => {
+    const currentOperator = get().operator
+    if (!currentOperator) {
+      return
+    }
+
+    const operator = {
+      ...currentOperator,
+      shop_name: input.shop_name.trim() || currentOperator.shop_name,
+      region: input.region.trim() || currentOperator.region,
+    }
+
+    persistOperator(operator)
+    set({ operator })
   },
   logout: async () => {
     try {

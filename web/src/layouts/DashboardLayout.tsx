@@ -11,7 +11,7 @@ import {
   PackageX,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { type FormEvent, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 import { ROUTES } from '../constants/routes'
@@ -44,9 +44,12 @@ function getAlertConfig(type: AdminAlert['type']) {
 export function DashboardLayout() {
   const navigate = useNavigate()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [profileForm, setProfileForm] = useState({ shop_name: '', region: '' })
   const { sidebarOpen, toggleSidebar, closeSidebar } = useFarmStore()
   const operator = useAuthStore((state) => state.operator)
   const logout = useAuthStore((state) => state.logout)
+  const updateOperatorProfile = useAuthStore((state) => state.updateOperatorProfile)
   const alerts = useNotificationStore((state) => state.alerts)
   const markAsRead = useNotificationStore((state) => state.markAsRead)
   const markAllAsRead = useNotificationStore((state) => state.markAllAsRead)
@@ -55,6 +58,22 @@ export function DashboardLayout() {
   const handleLogout = async () => {
     await logout()
     navigate(ROUTES.login, { replace: true })
+  }
+
+  const toggleProfile = () => {
+    if (!profileOpen) {
+      setProfileForm({
+        shop_name: operator?.shop_name ?? '',
+        region: operator?.region ?? '',
+      })
+    }
+    setProfileOpen((isOpen) => !isOpen)
+  }
+
+  const handleProfileSave = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    updateOperatorProfile(profileForm)
+    setProfileOpen(false)
   }
 
   return (
@@ -154,14 +173,62 @@ export function DashboardLayout() {
                 </div>
               )}
             </div>
-            <button className="flex items-center gap-2 py-1.5 pl-1.5 pr-1">
-              <span className="grid size-8 place-items-center rounded-full bg-[#dcebdc] text-[10px] font-bold text-rose-800">운영</span>
-              <span className="hidden text-left sm:block">
-                <span className="block text-xs font-bold text-slate-700">{operator?.full_name ?? '운영자'}</span>
-                <span className="block text-[10px] text-slate-400">{operator?.region ?? '스마트팜 운영팀'}</span>
-              </span>
-              <ChevronDown className="text-slate-400" size={14} />
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-lg py-1.5 pl-1.5 pr-1 transition hover:bg-rose-50"
+                onClick={toggleProfile}
+                aria-expanded={profileOpen}
+                aria-haspopup="dialog"
+              >
+                <span className="grid size-8 place-items-center rounded-full bg-[#dcebdc] text-[10px] font-bold text-rose-800">운영</span>
+                <span className="hidden text-left sm:block">
+                  <span className="block text-xs font-bold text-slate-700">{operator?.full_name ?? '운영자'}</span>
+                  <span className="block text-[10px] text-slate-400">{operator?.region ?? '스마트팜 운영팀'}</span>
+                </span>
+                <ChevronDown className={`text-slate-400 transition-transform ${profileOpen ? 'rotate-180' : ''}`} size={14} />
+              </button>
+
+              {profileOpen && (
+                <form
+                  onSubmit={handleProfileSave}
+                  className="absolute right-0 top-12 z-40 w-[min(calc(100vw-2rem),20rem)] rounded-xl border border-[#d5ddd4] bg-[#fffefa] p-5 shadow-xl shadow-slate-900/10"
+                >
+                  <div className="flex items-start gap-3 border-b border-[#e5e9e3] pb-4">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full bg-rose-100 text-xs font-extrabold text-rose-800">운영</span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-extrabold text-slate-900">{operator?.full_name ?? '운영자'}</span>
+                      <span className="mt-0.5 block truncate text-xs text-slate-400">{operator?.email ?? '운영자 계정'}</span>
+                    </span>
+                  </div>
+                  <div className="space-y-3 py-4">
+                    <label className="block text-xs font-bold text-slate-600">
+                      농장 · 꽃가게 이름
+                      <input
+                        value={profileForm.shop_name}
+                        onChange={(event) => setProfileForm((current) => ({ ...current, shop_name: event.target.value }))}
+                        className="form-input mt-1.5 !w-full !px-3 !py-2.5 text-sm"
+                        placeholder="예: 산지니 플라워"
+                      />
+                    </label>
+                    <label className="block text-xs font-bold text-slate-600">
+                      운영 지역
+                      <input
+                        value={profileForm.region}
+                        onChange={(event) => setProfileForm((current) => ({ ...current, region: event.target.value }))}
+                        className="form-input mt-1.5 !w-full !px-3 !py-2.5 text-sm"
+                        placeholder="예: 부산"
+                      />
+                    </label>
+                    <p className="text-[11px] leading-4 text-slate-400">저장하면 이 브라우저의 운영자 정보와 상단 관제명이 바로 바뀝니다.</p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button type="button" onClick={() => setProfileOpen(false)} className="rounded-lg px-3 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100">취소</button>
+                    <button type="submit" className="rounded-lg bg-rose-700 px-3.5 py-2 text-xs font-extrabold text-white transition hover:bg-rose-800">저장</button>
+                  </div>
+                </form>
+              )}
+            </div>
             <button
               className="hidden items-center gap-2 border-l border-[#d9e0d7] pl-3.5 text-xs font-bold text-slate-500 hover:text-rose-600 sm:inline-flex"
               onClick={handleLogout}
