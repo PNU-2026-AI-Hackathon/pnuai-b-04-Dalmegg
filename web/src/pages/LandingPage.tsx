@@ -86,9 +86,9 @@ export function LandingPage() {
                 <Link to={ROUTES.login} className="text-xs font-bold text-rose-800 underline underline-offset-4">운영자 시스템 접속</Link>
               </div>
               <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-slate-500">
-                <span className="flex items-center gap-1.5"><CheckCircle2 size={15} className="text-rose-600" /> 지역 기반 수거</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 size={15} className="text-rose-600" /> 친환경 가공</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 size={15} className="text-rose-600" /> 데이터 기반 재배</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 size={15} className="text-rose-600" /> 유휴공간 재생</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 size={15} className="text-rose-600" /> 실시간 환경 관리</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 size={15} className="text-rose-600" /> 재배·판매·체험 연계</span>
               </div>
             </div>
 
@@ -118,7 +118,7 @@ export function LandingPage() {
 
         <section id="cycle" className="scroll-mt-20 bg-rose-950 px-5 py-24 text-white lg:px-8">
           <div className="mx-auto max-w-7xl">
-            <div className="max-w-2xl"><p className="text-xs font-black tracking-[0.2em] text-rose-300">CIRCULAR SYSTEM</p><h2 className="mt-4 text-3xl font-black tracking-[-0.04em] sm:text-4xl">재배와 지역을 연결하는 운영의 흐름</h2><p className="mt-4 leading-7 text-rose-100/60">환경 데이터와 현장 운영, 지역 참여가 하나의 지속 가능한 흐름으로 이어집니다.</p></div>
+            <div className="max-w-2xl"><p className="text-xs font-black tracking-[0.2em] text-rose-300">CIRCULAR SYSTEM</p><h2 className="mt-4 text-3xl font-black tracking-[-0.04em] sm:text-4xl">재배와 지역을 연결하는 운영의 흐름</h2><p className="mt-4 leading-7 text-rose-100/60">환경 데이터와 현장 운영, 지역 참여가 하나의 지속 가능한 흐름으로 이어집니다.</p><p className="mt-3 text-xs leading-5 text-rose-200/70">계란껍질 수거·자원화 활동은 이 흐름을 보완하는 지역 순환 사례 중 하나입니다.</p></div>
             <div className="mt-14 grid gap-3 md:grid-cols-5">
               {cycleSteps.map(({ icon: Icon, title }, index) => (
                 <div key={title} className="relative flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 md:block md:text-center">

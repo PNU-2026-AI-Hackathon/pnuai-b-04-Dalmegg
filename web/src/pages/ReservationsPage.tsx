@@ -71,15 +71,28 @@ export function ReservationsPage() {
       return matchesQuery && (statusFilter === 'all' || reservation.status === statusFilter)
     })
   }, [items, query, statusFilter])
+  const reservationSummary = [
+    { key: 'reserved', label: '예약 접수', value: items.filter((item) => item.status === 'reserved').length, tone: 'text-amber-700' },
+    { key: 'confirmed', label: '운영 확정', value: items.filter((item) => item.status === 'confirmed').length, tone: 'text-rose-700' },
+    { key: 'attention', label: '확인 필요', value: items.filter((item) => item.status === 'no_show' || item.status === 'cancelled').length, tone: 'text-red-700' },
+  ]
 
   return (
     <div className="mx-auto max-w-[1500px]">
       <div><p className="text-sm font-bold text-rose-600">EXPERIENCE RESERVATION</p><h1 className="page-title">체험 예약 관리</h1><p className="page-description">내 운영 공간에 접수된 프로그램 예약을 확인하고 관리하세요.</p></div>
 
+      <section className="mt-6 grid divide-x divide-[#d9e0d7] overflow-hidden border border-[#d9e0d7] bg-[#fffefa] sm:grid-cols-3">
+        {reservationSummary.map(({ key, label, value, tone }) => (
+          <button key={key} type="button" onClick={() => setStatusFilter(key === 'attention' ? 'all' : key as ReservationStatus)} className="flex items-center justify-between px-5 py-4 text-left hover:bg-[#fff7f9]">
+            <span className="text-sm text-slate-600">{label}</span><span className={`text-2xl font-semibold tabular-nums ${tone}`}>{value}<small className="ml-1 text-xs font-medium">건</small></span>
+          </button>
+        ))}
+      </section>
+
       <section className="dashboard-card mt-7 overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row">
-          <label className="relative block flex-1"><Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} className="form-input pl-10" placeholder="예약자명, 이메일, 프로그램 검색" /></label>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | ReservationStatus)} className="form-input sm:w-44">
+        <div className="grid gap-3 border-b border-slate-100 p-5 sm:grid-cols-[minmax(0,1fr)_11rem]">
+          <label className="relative block min-w-0"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} className="form-input !pl-16" placeholder="예약자명, 이메일, 프로그램 검색" /></label>
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | ReservationStatus)} className="form-input !w-full">
             <option value="all">전체 상태</option>
             <option value="reserved">예약접수</option>
             <option value="confirmed">확정</option>
@@ -88,7 +101,14 @@ export function ReservationsPage() {
             <option value="no_show">미방문</option>
           </select>
         </div>
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-[#e2e7e0] md:hidden">
+          {filteredReservations.map((reservation) => {
+            const status = statusStyle[reservation.status]
+            return <button key={reservation.id} type="button" onClick={() => setSelected(reservation)} className="w-full px-5 py-4 text-left hover:bg-[#fff7f9]"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-[#27332c]">{reservation.program_title}</p><p className="mt-1 text-sm text-slate-500">{reservation.user_full_name} · {reservation.participant_count}명</p></div><span className={`status-badge shrink-0 ${status.className}`}>{status.label}</span></div><div className="mt-3 flex items-center justify-between text-xs text-slate-500"><span>{formatDateTime(reservation.created_at)}</span><strong className="text-[#27332c]">{reservation.total_amount.toLocaleString()}원</strong></div></button>
+          })}
+          {filteredReservations.length === 0 && <p className="p-12 text-center text-sm text-slate-400">조건에 맞는 예약이 없습니다.</p>}
+        </div>
+        <div className="hidden overflow-x-auto md:block">
           <table className="data-table min-w-[980px]">
             <thead><tr><th>예약자명</th><th>이메일</th><th>프로그램명</th><th>예약 접수일</th><th>인원수</th><th>결제금액</th><th>상태</th><th className="text-right">상세</th></tr></thead>
             <tbody>
