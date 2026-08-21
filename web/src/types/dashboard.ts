@@ -82,6 +82,9 @@ export interface AdminAlert {
   message: string
   severity: 'info' | 'warning' | 'danger' | string
   is_read: boolean
+  is_resolved?: boolean
+  resolution_note?: string
+  resolved_at?: string
 }
 
 export type InventoryStatus = 'sufficient' | 'low' | 'soldout'

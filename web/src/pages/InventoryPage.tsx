@@ -21,7 +21,7 @@ const INVENTORY_STORAGE_KEY = 'dalmegg.flowerInventory'
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 const statusStyle: Record<InventoryStatus, { label: string; className: string }> = {
-  sufficient: { label: '재고충분', className: 'bg-rose-50 text-rose-700' },
+  sufficient: { label: '재고충분', className: 'bg-emerald-50 text-emerald-700' },
   low: { label: '재고부족', className: 'bg-amber-50 text-amber-700' },
   soldout: { label: '품절', className: 'bg-rose-50 text-rose-700' },
 }
@@ -499,7 +499,7 @@ export function InventoryPage() {
                       </div>
                       <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.description || '설명이 없습니다.'}</p>
                       <div className="mt-3 flex items-center justify-between gap-3">
-                        <p className="text-sm font-bold text-slate-600">재고 <span className="text-rose-700">{item.stock_quantity.toLocaleString()}주</span></p>
+                        <p className="text-sm font-bold text-slate-600">재고 <span className={item.stock_quantity === 0 ? 'text-rose-700' : item.stock_quantity < 100 ? 'text-amber-700' : 'text-emerald-700'}>{item.stock_quantity.toLocaleString()}주</span></p>
                         <div className="flex shrink-0 items-center gap-2">
                           <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-rose-300 hover:text-rose-700">
                             <Pencil size={13} /> 수정

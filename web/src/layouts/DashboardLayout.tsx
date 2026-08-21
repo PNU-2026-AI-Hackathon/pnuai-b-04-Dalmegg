@@ -11,7 +11,7 @@ import {
   PackageX,
   X,
 } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
 import { ROUTES } from '../constants/routes'
@@ -46,6 +46,8 @@ export function DashboardLayout() {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [profileForm, setProfileForm] = useState({ shop_name: '', region: '' })
+  const [profileSaved, setProfileSaved] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
   const { sidebarOpen, toggleSidebar, closeSidebar } = useFarmStore()
   const operator = useAuthStore((state) => state.operator)
   const logout = useAuthStore((state) => state.logout)
@@ -74,7 +76,30 @@ export function DashboardLayout() {
     event.preventDefault()
     updateOperatorProfile(profileForm)
     setProfileOpen(false)
+    setProfileSaved(true)
   }
+
+  useEffect(() => {
+    if (!profileOpen) return
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) setProfileOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setProfileOpen(false)
+    }
+    document.addEventListener('mousedown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [profileOpen])
+
+  useEffect(() => {
+    if (!profileSaved) return
+    const timer = window.setTimeout(() => setProfileSaved(false), 2600)
+    return () => window.clearTimeout(timer)
+  }, [profileSaved])
 
   return (
     <div className="min-h-screen bg-[#f6f6f1]">
@@ -115,7 +140,7 @@ export function DashboardLayout() {
             <p className="mt-0.5 text-sm font-semibold text-[#1d3224]">{operator?.shop_name ?? '스마트팜 운영지'}</p>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <div className="relative">
+            <div ref={profileRef} className="relative">
               <button
                 className="relative grid size-9 place-items-center text-slate-500 hover:text-rose-700"
                 aria-label="알림"
@@ -192,6 +217,8 @@ export function DashboardLayout() {
               {profileOpen && (
                 <form
                   onSubmit={handleProfileSave}
+                  role="dialog"
+                  aria-label="운영자 프로필 설정"
                   className="absolute right-0 top-12 z-40 w-[min(calc(100vw-2rem),20rem)] rounded-xl border border-[#d5ddd4] bg-[#fffefa] p-5 shadow-xl shadow-slate-900/10"
                 >
                   <div className="flex items-start gap-3 border-b border-[#e5e9e3] pb-4">
@@ -237,6 +264,7 @@ export function DashboardLayout() {
             </button>
           </div>
         </header>
+        {profileSaved && <div role="status" className="fixed right-4 top-20 z-50 rounded-lg bg-[#24352a] px-4 py-3 text-xs font-bold text-white shadow-lg md:right-8">운영자 정보가 저장되었습니다.</div>}
         <main className="p-4 md:p-7"><Outlet /></main>
       </div>
     </div>

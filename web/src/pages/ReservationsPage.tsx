@@ -1,6 +1,6 @@
 import { CalendarDays, Eye, Search, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { listAdminReservations } from '../api/reservations'
+import { listAdminReservations, updateAdminReservationStatus } from '../api/reservations'
 import { Modal } from '../components/Modal'
 import { reservations } from '../mock/dashboard'
 import { useAuthStore } from '../store/useAuthStore'
@@ -33,6 +33,9 @@ export function ReservationsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | ReservationStatus>('all')
   const [items, setItems] = useState<Reservation[]>(reservations)
   const [selected, setSelected] = useState<Reservation | null>(null)
+  const [attentionOnly, setAttentionOnly] = useState(false)
+  const [statusError, setStatusError] = useState<string | null>(null)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   useEffect(() => {
     let ignore = false
@@ -68,14 +71,43 @@ export function ReservationsPage() {
         reservation.user_email,
         reservation.program_title,
       ].some((value) => value.toLowerCase().includes(keyword))
-      return matchesQuery && (statusFilter === 'all' || reservation.status === statusFilter)
+      const matchesStatus = statusFilter === 'all' || reservation.status === statusFilter
+      const needsAttention = reservation.status === 'cancelled' || reservation.status === 'no_show'
+      return matchesQuery && matchesStatus && (!attentionOnly || needsAttention)
     })
-  }, [items, query, statusFilter])
+  }, [attentionOnly, items, query, statusFilter])
   const reservationSummary = [
     { key: 'reserved', label: '예약 접수', value: items.filter((item) => item.status === 'reserved').length, tone: 'text-amber-700' },
     { key: 'confirmed', label: '운영 확정', value: items.filter((item) => item.status === 'confirmed').length, tone: 'text-rose-700' },
     { key: 'attention', label: '확인 필요', value: items.filter((item) => item.status === 'no_show' || item.status === 'cancelled').length, tone: 'text-red-700' },
   ]
+
+  const selectSummary = (key: string) => {
+    setAttentionOnly(key === 'attention')
+    setStatusFilter(key === 'attention' ? 'all' : key as ReservationStatus)
+  }
+
+  const updateStatus = async (status: ReservationStatus) => {
+    if (!selected) return
+    setIsUpdatingStatus(true)
+    setStatusError(null)
+    try {
+      const updated = operator?.email === 'test'
+        ? { ...selected, status }
+        : await updateAdminReservationStatus(selected.id, status)
+      setItems((current) => current.map((item) => item.id === updated.id ? updated : item))
+      setSelected(updated)
+    } catch {
+      setStatusError('상태 변경에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
+
+  const nextStatusActions: Partial<Record<ReservationStatus, { status: ReservationStatus; label: string }[]>> = {
+    reserved: [{ status: 'confirmed', label: '예약 확정' }, { status: 'cancelled', label: '예약 취소' }],
+    confirmed: [{ status: 'completed', label: '체험 완료' }, { status: 'no_show', label: '미방문 처리' }, { status: 'cancelled', label: '예약 취소' }],
+  }
 
   return (
     <div className="mx-auto max-w-[1500px]">
@@ -83,7 +115,7 @@ export function ReservationsPage() {
 
       <section className="mt-6 grid divide-x divide-[#d9e0d7] overflow-hidden border border-[#d9e0d7] bg-[#fffefa] sm:grid-cols-3">
         {reservationSummary.map(({ key, label, value, tone }) => (
-          <button key={key} type="button" onClick={() => setStatusFilter(key === 'attention' ? 'all' : key as ReservationStatus)} className="flex items-center justify-between px-5 py-4 text-left hover:bg-[#fff7f9]">
+          <button key={key} type="button" onClick={() => selectSummary(key)} className="flex items-center justify-between px-5 py-4 text-left hover:bg-[#fff7f9]">
             <span className="text-sm text-slate-600">{label}</span><span className={`text-2xl font-semibold tabular-nums ${tone}`}>{value}<small className="ml-1 text-xs font-medium">건</small></span>
           </button>
         ))}
@@ -92,7 +124,7 @@ export function ReservationsPage() {
       <section className="dashboard-card mt-7 overflow-hidden">
         <div className="grid gap-3 border-b border-slate-100 p-5 sm:grid-cols-[minmax(0,1fr)_11rem]">
           <label className="relative block min-w-0"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} className="form-input !pl-16" placeholder="예약자명, 이메일, 프로그램 검색" /></label>
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | ReservationStatus)} className="form-input !w-full">
+          <select value={statusFilter} onChange={(event) => { setAttentionOnly(false); setStatusFilter(event.target.value as 'all' | ReservationStatus) }} className="form-input !w-full">
             <option value="all">전체 상태</option>
             <option value="reserved">예약접수</option>
             <option value="confirmed">확정</option>
@@ -147,7 +179,9 @@ export function ReservationsPage() {
             <div><dt className="detail-label">접수 운영 공간</dt><dd className="detail-value">{operator?.shop_name ?? `운영 공간 #${selected.shop_id}`}</dd></div>
             <div className="col-span-2"><dt className="detail-label">상태</dt><dd className="mt-1"><span className={`status-badge ${statusStyle[selected.status].className}`}>{statusStyle[selected.status].label}</span></dd></div>
           </dl>
-          <div className="mt-6 flex justify-end"><button onClick={() => setSelected(null)} className="primary-button">확인</button></div>
+          {statusError && <p className="mt-5 rounded-lg bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">{statusError}</p>}
+          {nextStatusActions[selected.status] && <div className="mt-6 border-t border-slate-100 pt-5"><p className="text-xs font-bold text-slate-500">운영 처리</p><div className="mt-2 flex flex-wrap gap-2">{nextStatusActions[selected.status]?.map((action) => <button key={action.status} type="button" disabled={isUpdatingStatus} onClick={() => updateStatus(action.status)} className={action.status === 'cancelled' || action.status === 'no_show' ? 'secondary-button !text-rose-700' : 'primary-button'}>{isUpdatingStatus ? '변경 중…' : action.label}</button>)}</div></div>}
+          <div className="mt-6 flex justify-end"><button onClick={() => setSelected(null)} className="secondary-button">닫기</button></div>
         </Modal>
       )}
     </div>

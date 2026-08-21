@@ -25,3 +25,10 @@ export function listAdminReservations({ shopId, status, query }: AdminReservatio
   const search = searchParams.toString()
   return apiRequest<Reservation[]>(`/api/admin/reservations${search ? `?${search}` : ''}`)
 }
+
+export function updateAdminReservationStatus(reservationId: number, status: ReservationStatus) {
+  return apiRequest<Reservation>(`/api/admin/reservations/${reservationId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
+}
