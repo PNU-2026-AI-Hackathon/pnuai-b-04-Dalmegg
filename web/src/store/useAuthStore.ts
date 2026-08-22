@@ -25,6 +25,7 @@ interface AuthState {
   isAuthenticating: boolean
   login: (email: string, password: string) => Promise<boolean>
   signup: (input: OperatorSignupInput) => Promise<boolean>
+  updateOperatorProfile: (input: Pick<AuthOperator, 'shop_name' | 'region'>) => void
   logout: () => Promise<void>
   clearLoginError: () => void
   clearSignupError: () => void
@@ -74,13 +75,23 @@ function readStoredOperator(): AuthOperator | null {
       return null
     }
 
+    const normalizedAccount = normalizeAccount(JSON.parse(storedValue) as LegacyOperatorAccount)
+    if (!normalizedAccount) {
+      window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
+      return null
+    }
+
+    if (normalizedAccount.email === 'test') {
+      window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
+      return null
+    }
+
     if (!USE_MOCKS && !getAccessToken() && !getRefreshToken()) {
       window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
       return null
     }
 
-    const normalizedAccount = normalizeAccount(JSON.parse(storedValue) as LegacyOperatorAccount)
-    return normalizedAccount ? toAuthOperator(normalizedAccount) : null
+    return toAuthOperator(normalizedAccount)
   } catch {
     window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
     return null
@@ -104,9 +115,11 @@ function readMockOperators(): OperatorAccount[] {
       return operatorAccounts
     }
 
-    return parsedValue
+    const storedAccounts = parsedValue
       .map((account) => normalizeAccount(account as LegacyOperatorAccount))
-      .filter((account): account is OperatorAccount => account !== null)
+      .filter((account): account is OperatorAccount => account !== null && account.email !== 'test')
+
+    return storedAccounts
   } catch {
     window.localStorage.removeItem(MOCK_OPERATORS_STORAGE_KEY)
     return operatorAccounts
@@ -221,7 +234,7 @@ function buildOperatorFromShop(admin: AdminUserRead, shop: ShopRead): AuthOperat
   }
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   operator: readStoredOperator(),
   loginError: null,
   signupError: null,
@@ -334,6 +347,21 @@ export const useAuthStore = create<AuthState>((set) => ({
         return false
       }
     }
+  },
+  updateOperatorProfile: (input) => {
+    const currentOperator = get().operator
+    if (!currentOperator) {
+      return
+    }
+
+    const operator = {
+      ...currentOperator,
+      shop_name: input.shop_name.trim() || currentOperator.shop_name,
+      region: input.region.trim() || currentOperator.region,
+    }
+
+    persistOperator(operator)
+    set({ operator })
   },
   logout: async () => {
     try {

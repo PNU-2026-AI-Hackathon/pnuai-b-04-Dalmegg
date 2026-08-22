@@ -80,17 +80,17 @@ export function SignupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f3f8f5] text-slate-950">
+    <main className="min-h-screen bg-[#f6f6f1] text-slate-950">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl items-center px-5 py-10 lg:px-8">
         <div className="grid w-full gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
-          <section className="order-2 lg:order-1">
-            <Link to={ROUTES.home} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-emerald-700">
+          <section className="order-2 border-t border-[#cfd8cc] pt-6 lg:order-1 lg:border-t-0 lg:border-r lg:pr-12 lg:pt-0">
+            <Link to={ROUTES.home} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-rose-700">
               <ArrowLeft size={17} /> 홈으로 돌아가기
             </Link>
             <div className="mt-8">
               <Logo />
-              <p className="mt-8 text-sm font-black tracking-[0.18em] text-emerald-700">OPERATOR SIGNUP</p>
-              <h1 className="mt-3 max-w-xl text-4xl font-black leading-tight tracking-[-0.04em] md:text-5xl">
+              <p className="mt-8 text-[11px] font-bold tracking-[0.18em] text-rose-700">OPERATOR SIGNUP</p>
+              <h1 className="mt-3 max-w-xl text-4xl font-semibold leading-tight tracking-[-0.05em] md:text-5xl">
                 운영자 계정과 운영 공간 등록
               </h1>
               <p className="mt-5 max-w-lg text-sm leading-7 text-slate-600">
@@ -98,22 +98,22 @@ export function SignupPage() {
               </p>
             </div>
             <div className="mt-8 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
-              <div className="rounded-2xl border border-emerald-100 bg-white p-4">
-                <Sprout className="text-emerald-700" size={22} />
+              <div className="border border-[#d9e0d7] bg-[#fffefa] p-4">
+                <Sprout className="text-rose-700" size={22} />
                 <p className="mt-3 font-extrabold text-slate-900">운영자 계정</p>
                 <p className="mt-1 text-xs leading-5 text-slate-500">이메일, 비밀번호, 이름을 입력해 운영 계정을 만듭니다.</p>
               </div>
-              <div className="rounded-2xl border border-emerald-100 bg-white p-4">
-                <Building2 className="text-emerald-700" size={22} />
+              <div className="border border-[#d9e0d7] bg-[#fffefa] p-4">
+                <Building2 className="text-rose-700" size={22} />
                 <p className="mt-3 font-extrabold text-slate-900">담당 운영 공간</p>
                 <p className="mt-1 text-xs leading-5 text-slate-500">운영 공간명, 지역, 주소, 연락처를 함께 등록합니다.</p>
               </div>
             </div>
           </section>
 
-          <section className="order-1 rounded-[2rem] border border-emerald-100 bg-white p-5 shadow-2xl shadow-emerald-950/10 sm:p-8 lg:order-2">
+          <section className="order-1 border border-[#d9e0d7] bg-[#fffefa] p-5 sm:p-8 lg:order-2">
             <div>
-              <p className="text-sm font-extrabold text-emerald-700">운영자 회원가입</p>
+              <p className="text-sm font-extrabold text-rose-700">운영자 회원가입</p>
               <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-slate-950">내 운영 공간 등록</h2>
               <p className="mt-2 text-sm text-slate-500">운영자 정보와 담당 스마트팜 정보를 입력해주세요.</p>
             </div>
@@ -121,7 +121,7 @@ export function SignupPage() {
             <form className="mt-7 space-y-4" onSubmit={handleSubmit}>
               <label className="block">
                 <span className="text-xs font-extrabold text-slate-600">운영자 이름</span>
-                <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-emerald-400 focus-within:bg-white">
+                <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-rose-400 focus-within:bg-white">
                   <UserRound size={18} className="text-slate-400" />
                   <input
                     type="text"
@@ -137,7 +137,7 @@ export function SignupPage() {
 
               <label className="block">
                 <span className="text-xs font-extrabold text-slate-600">이메일</span>
-                <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-emerald-400 focus-within:bg-white">
+                <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-rose-400 focus-within:bg-white">
                   <Mail size={18} className="text-slate-400" />
                   <input
                     type="email"
@@ -154,7 +154,7 @@ export function SignupPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
                   <span className="text-xs font-extrabold text-slate-600">비밀번호</span>
-                  <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-emerald-400 focus-within:bg-white">
+                  <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-rose-400 focus-within:bg-white">
                     <Lock size={18} className="text-slate-400" />
                     <input
                       type="password"
@@ -170,7 +170,7 @@ export function SignupPage() {
 
                 <label className="block">
                   <span className="text-xs font-extrabold text-slate-600">비밀번호 확인</span>
-                  <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-emerald-400 focus-within:bg-white">
+                  <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-rose-400 focus-within:bg-white">
                     <Lock size={18} className="text-slate-400" />
                     <input
                       type="password"
@@ -187,7 +187,7 @@ export function SignupPage() {
 
               <label className="block">
                 <span className="text-xs font-extrabold text-slate-600">운영 공간명</span>
-                <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-emerald-400 focus-within:bg-white">
+                <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-rose-400 focus-within:bg-white">
                   <Building2 size={18} className="text-slate-400" />
                   <input
                     type="text"
@@ -204,7 +204,7 @@ export function SignupPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
                   <span className="text-xs font-extrabold text-slate-600">지역</span>
-                  <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-emerald-400 focus-within:bg-white">
+                  <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-rose-400 focus-within:bg-white">
                     <Sprout size={18} className="text-slate-400" />
                     <input
                       type="text"
@@ -219,7 +219,7 @@ export function SignupPage() {
 
                 <label className="block">
                   <span className="text-xs font-extrabold text-slate-600">전화번호</span>
-                  <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-emerald-400 focus-within:bg-white">
+                  <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-rose-400 focus-within:bg-white">
                     <Phone size={18} className="text-slate-400" />
                     <input
                       type="text"
@@ -235,7 +235,7 @@ export function SignupPage() {
 
               <label className="block">
                 <span className="text-xs font-extrabold text-slate-600">주소</span>
-                <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-emerald-400 focus-within:bg-white">
+                <span className="mt-2 flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-rose-400 focus-within:bg-white">
                   <MapPin size={18} className="text-slate-400" />
                   <input
                     type="text"
@@ -267,7 +267,7 @@ export function SignupPage() {
               <button
                 type="submit"
                 disabled={isAuthenticating}
-                className="w-full rounded-2xl bg-emerald-700 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-200 transition hover:-translate-y-0.5 hover:bg-emerald-800"
+                className="w-full rounded-2xl bg-rose-700 px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-rose-200 transition hover:-translate-y-0.5 hover:bg-rose-800"
               >
                 {isAuthenticating ? '계정 생성 중...' : '운영자 계정 만들기'}
               </button>
@@ -275,7 +275,7 @@ export function SignupPage() {
 
             <p className="mt-5 text-center text-xs font-bold text-slate-500">
               이미 계정이 있나요?{' '}
-              <Link to={ROUTES.login} className="text-emerald-700 hover:text-emerald-800">
+              <Link to={ROUTES.login} className="text-rose-700 hover:text-rose-800">
                 로그인하기
               </Link>
             </p>
