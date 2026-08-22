@@ -52,7 +52,7 @@ export function LandingPage() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
           <Logo />
           <nav className="hidden items-center gap-8 text-sm font-bold text-slate-600 md:flex">
-            <a href="#service" className="hover:text-rose-600">프로젝트 흐름</a>
+            <a href="#service" className="hover:text-rose-600">서비스 소개</a>
             <a href="#impact" className="hover:text-rose-600">BLOOM:IN 소개</a>
             <Link to={ROUTES.login} className="border border-rose-800 bg-rose-800 px-4 py-2 text-xs text-white hover:bg-rose-900">운영자 로그인</Link>
           </nav>
@@ -63,7 +63,7 @@ export function LandingPage() {
         {menuOpen && (
           <nav className="border-t border-slate-100 bg-white px-5 py-4 md:hidden">
             <div className="flex flex-col gap-4 text-sm font-bold text-slate-600">
-              <a href="#service" onClick={() => setMenuOpen(false)}>프로젝트 흐름</a>
+              <a href="#service" onClick={() => setMenuOpen(false)}>서비스 소개</a>
               <a href="#impact" onClick={() => setMenuOpen(false)}>BLOOM:IN 소개</a>
               <Link to={ROUTES.login} className="text-rose-700">운영자 로그인</Link>
             </div>
