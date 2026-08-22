@@ -28,7 +28,7 @@ const statusStyle: Record<InventoryStatus, { label: string; className: string }>
 
 function getStatus(stockQuantity: number): InventoryStatus {
   if (stockQuantity === 0) return 'soldout'
-  if (stockQuantity < 100) return 'low'
+  if (stockQuantity <= 5) return 'low'
   return 'sufficient'
 }
 
@@ -223,7 +223,7 @@ function FlowerForm({ initial, defaultShopId, onSubmit, onClose }: FlowerFormPro
           </label>
 
           <p className="rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-            저장한 꽃은 내 운영 공간의 판매 목록에 등록됩니다. 100주 이상은 재고충분, 1-99주는 재고부족, 0주는 품절입니다.
+            저장한 꽃은 내 운영 공간의 판매 목록에 등록됩니다. 6주 이상은 재고충분, 1-5주는 재고부족, 0주는 품절입니다.
           </p>
         </div>
       </div>
@@ -499,7 +499,7 @@ export function InventoryPage() {
                       </div>
                       <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.description || '설명이 없습니다.'}</p>
                       <div className="mt-3 flex items-center justify-between gap-3">
-                        <p className="text-sm font-bold text-slate-600">재고 <span className={item.stock_quantity === 0 ? 'text-rose-700' : item.stock_quantity < 100 ? 'text-amber-700' : 'text-emerald-700'}>{item.stock_quantity.toLocaleString()}주</span></p>
+                        <p className="text-sm font-bold text-slate-600">재고 <span className={item.stock_quantity === 0 ? 'text-rose-700' : item.stock_quantity <= 5 ? 'text-amber-700' : 'text-emerald-700'}>{item.stock_quantity.toLocaleString()}주</span></p>
                         <div className="flex shrink-0 items-center gap-2">
                           <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-rose-300 hover:text-rose-700">
                             <Pencil size={13} /> 수정

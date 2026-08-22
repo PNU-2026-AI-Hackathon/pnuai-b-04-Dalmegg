@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { getAdminMe, loginAdmin, logoutAdmin, registerAdmin } from '../api/auth'
 import { ApiError, clearAuthTokens, getAccessToken, getRefreshToken } from '../api/client'
-import { createShop, listShops } from '../api/shops'
+import { createShop, listShops, updateShop } from '../api/shops'
 import type { AdminUserRead, ShopRead } from '../api/types'
 import { operatorAccounts, type OperatorAccount } from '../mock/operators'
 
@@ -25,7 +25,7 @@ interface AuthState {
   isAuthenticating: boolean
   login: (email: string, password: string) => Promise<boolean>
   signup: (input: OperatorSignupInput) => Promise<boolean>
-  updateOperatorProfile: (input: Pick<AuthOperator, 'shop_name' | 'region'>) => void
+  updateOperatorProfile: (input: Pick<AuthOperator, 'shop_name' | 'region'>) => Promise<boolean>
   logout: () => Promise<void>
   clearLoginError: () => void
   clearSignupError: () => void
@@ -348,20 +348,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     }
   },
-  updateOperatorProfile: (input) => {
+  updateOperatorProfile: async (input) => {
     const currentOperator = get().operator
     if (!currentOperator) {
-      return
+      return false
     }
 
-    const operator = {
-      ...currentOperator,
-      shop_name: input.shop_name.trim() || currentOperator.shop_name,
-      region: input.region.trim() || currentOperator.region,
+    const shopName = input.shop_name.trim() || currentOperator.shop_name
+    const region = input.region.trim() || currentOperator.region
+
+    if (!USE_MOCKS && currentOperator.shop_id <= 0) {
+      return false
     }
 
-    persistOperator(operator)
-    set({ operator })
+    try {
+      const shop = USE_MOCKS
+        ? null
+        : await updateShop(currentOperator.shop_id, { name: shopName, region })
+      const operator = {
+        ...currentOperator,
+        shop_name: shop?.name ?? shopName,
+        region: shop?.region ?? region,
+        address: shop?.address ?? currentOperator.address,
+        phone: shop?.phone ?? currentOperator.phone,
+        description: shop?.description ?? currentOperator.description,
+      }
+
+      persistOperator(operator)
+      set({ operator })
+      return true
+    } catch {
+      return false
+    }
   },
   logout: async () => {
     try {

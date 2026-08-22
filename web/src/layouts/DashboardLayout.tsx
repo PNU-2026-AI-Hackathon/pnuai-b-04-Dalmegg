@@ -47,6 +47,8 @@ export function DashboardLayout() {
   const [profileOpen, setProfileOpen] = useState(false)
   const [profileForm, setProfileForm] = useState({ shop_name: '', region: '' })
   const [profileSaved, setProfileSaved] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
   const { sidebarOpen, toggleSidebar, closeSidebar } = useFarmStore()
   const operator = useAuthStore((state) => state.operator)
@@ -68,13 +70,23 @@ export function DashboardLayout() {
         shop_name: operator?.shop_name ?? '',
         region: operator?.region ?? '',
       })
+      setProfileError(null)
     }
     setProfileOpen((isOpen) => !isOpen)
   }
 
-  const handleProfileSave = (event: FormEvent<HTMLFormElement>) => {
+  const handleProfileSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    updateOperatorProfile(profileForm)
+    setIsSavingProfile(true)
+    setProfileError(null)
+    const saved = await updateOperatorProfile(profileForm)
+    setIsSavingProfile(false)
+
+    if (!saved) {
+      setProfileError('매장 정보 저장에 실패했습니다. 연결 상태를 확인한 뒤 다시 시도해주세요.')
+      return
+    }
+
     setProfileOpen(false)
     setProfileSaved(true)
   }
@@ -140,7 +152,7 @@ export function DashboardLayout() {
             <p className="mt-0.5 text-sm font-semibold text-[#1d3224]">{operator?.shop_name ?? '스마트팜 운영지'}</p>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <div ref={profileRef} className="relative">
+            <div className="relative">
               <button
                 className="relative grid size-9 place-items-center text-slate-500 hover:text-rose-700"
                 aria-label="알림"
@@ -198,7 +210,7 @@ export function DashboardLayout() {
                 </div>
               )}
             </div>
-            <div className="relative">
+            <div ref={profileRef} className="relative">
               <button
                 type="button"
                 className="flex items-center gap-2 rounded-lg py-1.5 pl-1.5 pr-1 transition hover:bg-rose-50"
@@ -247,11 +259,12 @@ export function DashboardLayout() {
                         placeholder="예: 부산"
                       />
                     </label>
-                    <p className="text-[11px] leading-4 text-slate-400">저장하면 이 브라우저의 운영자 정보와 상단 관제명이 바로 바뀝니다.</p>
+                    <p className="text-[11px] leading-4 text-slate-400">저장하면 실제 매장 정보와 상단 관제명이 바로 바뀝니다.</p>
                   </div>
+                  {profileError && <p className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-bold leading-4 text-rose-700">{profileError}</p>}
                   <div className="flex justify-end gap-2">
-                    <button type="button" onClick={() => setProfileOpen(false)} className="rounded-lg px-3 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100">취소</button>
-                    <button type="submit" className="rounded-lg bg-rose-700 px-3.5 py-2 text-xs font-extrabold text-white transition hover:bg-rose-800">저장</button>
+                    <button type="button" disabled={isSavingProfile} onClick={() => setProfileOpen(false)} className="rounded-lg px-3 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">취소</button>
+                    <button type="submit" disabled={isSavingProfile} className="rounded-lg bg-rose-700 px-3.5 py-2 text-xs font-extrabold text-white transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:opacity-60">{isSavingProfile ? '저장 중…' : '저장'}</button>
                   </div>
                 </form>
               )}

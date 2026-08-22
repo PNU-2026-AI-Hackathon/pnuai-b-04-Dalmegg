@@ -31,6 +31,14 @@ export interface ShopCreate {
   description?: string | null
 }
 
+export interface ShopUpdate {
+  name?: string
+  region?: string
+  address?: string
+  phone?: string | null
+  description?: string | null
+}
+
 export interface DashboardAlertRead {
   id: number
   type: 'sensor' | 'reservation' | 'stock' | string
