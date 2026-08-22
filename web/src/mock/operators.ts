@@ -15,20 +15,6 @@ export interface OperatorAccount {
 
 export const operatorAccounts: OperatorAccount[] = [
   {
-    id: 0,
-    email: 'test',
-    password: '0000',
-    full_name: 'BLOOM:IN 테스트 운영자',
-    is_active: true,
-    role: 'admin',
-    shop_id: 1,
-    shop_name: '산지니 플라워',
-    region: '부산',
-    address: '부산광역시 금정구 유휴 상가 리빙랩',
-    phone: '010-0000-0000',
-    description: 'BLOOM:IN 운영 시스템 테스트 계정',
-  },
-  {
     id: 1,
     email: 'manager@dalmegg.kr',
     password: 'dalmegg1234',

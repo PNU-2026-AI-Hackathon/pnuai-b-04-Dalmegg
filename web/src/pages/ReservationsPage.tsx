@@ -92,9 +92,7 @@ export function ReservationsPage() {
     setIsUpdatingStatus(true)
     setStatusError(null)
     try {
-      const updated = operator?.email === 'test'
-        ? { ...selected, status }
-        : await updateAdminReservationStatus(selected.id, status)
+      const updated = await updateAdminReservationStatus(selected.id, status)
       setItems((current) => current.map((item) => item.id === updated.id ? updated : item))
       setSelected(updated)
     } catch {

@@ -237,7 +237,7 @@ function FlowerForm({ initial, defaultShopId, onSubmit, onClose }: FlowerFormPro
 
 export function InventoryPage() {
   const operator = useAuthStore((state) => state.operator)
-  const shouldUseLocalInventory = USE_MOCKS || operator?.email === 'test'
+  const shouldUseLocalInventory = USE_MOCKS
   const [items, setItems] = useState<FlowerInventoryItem[]>(readStoredInventory)
   const [query, setQuery] = useState('')
   const [viewMode, setViewMode] = useState<InventoryViewMode>('list')

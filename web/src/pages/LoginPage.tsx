@@ -55,11 +55,11 @@ export function LoginPage() {
             <div className="mt-8">
               <Logo />
               <p className="mt-8 text-[11px] font-bold tracking-[0.16em] text-rose-700">OPERATOR ACCESS</p>
-              <h1 className="mt-3 max-w-xl text-4xl font-semibold leading-tight tracking-[-0.05em] md:text-5xl">
-                도심 유휴공간 스마트팜 운영자 로그인
+              <h1 className="mt-3 max-w-xl text-3xl font-semibold leading-[1.2] tracking-[-0.05em] md:text-4xl">
+                도심에서 시작하는 플라워팜<br />운영의 시작
               </h1>
               <p className="mt-5 max-w-lg text-sm leading-7 text-slate-600">
-                운영자는 담당 스마트팜의 센서 상태, 꽃 재고, 예약, 수거 현황을 운영 공간 기준으로 확인할 수 있습니다.
+                센서, 꽃 재고, 체험 예약을 한 곳에서 관리하는 BLOOM:IN 운영 공간입니다.
               </p>
             </div>
             <div className="mt-8 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
@@ -140,14 +140,6 @@ export function LoginPage() {
             <div className="mt-7 border-l-2 border-rose-700 bg-[#f1f4ed] p-4 text-xs leading-5 text-slate-600">
               처음 이용하는 운영자는 회원가입에서 계정과 담당 운영 공간을 먼저 등록해주세요.
             </div>
-            <button
-              type="button"
-              onClick={() => { setEmail('test'); setPassword('0000') }}
-              className="mt-3 flex w-full items-center justify-between border border-[#d9e0d7] bg-[#fffefa] px-4 py-3 text-left text-xs hover:border-rose-400"
-            >
-              <span><span className="font-bold text-[#24342a]">임시 운영자 계정</span><span className="ml-2 text-slate-500">데모 환경을 바로 확인할 수 있습니다.</span></span>
-              <span className="font-mono font-bold text-rose-800">test / 0000</span>
-            </button>
             {USE_MOCKS && (
               <div className="mt-4 rounded-2xl border border-rose-100 bg-rose-50/70 p-4">
                 <p className="text-xs font-extrabold text-rose-800">테스트 계정</p>

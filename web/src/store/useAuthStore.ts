@@ -81,15 +81,14 @@ function readStoredOperator(): AuthOperator | null {
       return null
     }
 
-    // 임시 체험 계정은 API 토큰 없이 동작하므로, 운영자가 입력한 매장명도 유지합니다.
-    if (!USE_MOCKS && normalizedAccount.email !== 'test' && !getAccessToken() && !getRefreshToken()) {
+    if (normalizedAccount.email === 'test') {
       window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
       return null
     }
 
-    if (normalizedAccount.email === 'test' && normalizedAccount.shop_name === '달멕 플라워') {
-      normalizedAccount.shop_name = '산지니 플라워'
-      persistOperator(toAuthOperator(normalizedAccount))
+    if (!USE_MOCKS && !getAccessToken() && !getRefreshToken()) {
+      window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
+      return null
     }
 
     return toAuthOperator(normalizedAccount)
@@ -118,12 +117,9 @@ function readMockOperators(): OperatorAccount[] {
 
     const storedAccounts = parsedValue
       .map((account) => normalizeAccount(account as LegacyOperatorAccount))
-      .filter((account): account is OperatorAccount => account !== null)
+      .filter((account): account is OperatorAccount => account !== null && account.email !== 'test')
 
-    const temporaryAccount = operatorAccounts.find((account) => account.email === 'test')
-    return temporaryAccount && !storedAccounts.some((account) => account.email === temporaryAccount.email)
-      ? [temporaryAccount, ...storedAccounts]
-      : storedAccounts
+    return storedAccounts
   } catch {
     window.localStorage.removeItem(MOCK_OPERATORS_STORAGE_KEY)
     return operatorAccounts
@@ -248,18 +244,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ isAuthenticating: true, loginError: null })
 
-    // 개발·데모 환경에서 백엔드 상태와 관계없이 사용할 수 있는 운영자 체험 계정입니다.
-    const temporaryOperator = findMockOperator(normalizedEmail, password)
-    if (normalizedEmail === 'test' && temporaryOperator) {
-      const operator = toAuthOperator(temporaryOperator)
-      persistOperator(operator)
-      clearAuthTokens()
-      set({ operator, loginError: null, signupError: null, isAuthenticating: false })
-      return true
-    }
-
     if (USE_MOCKS) {
-      const mockOperator = temporaryOperator
+      const mockOperator = findMockOperator(normalizedEmail, password)
 
       if (!mockOperator) {
         set({ loginError: '이메일 또는 비밀번호를 다시 확인해주세요.', isAuthenticating: false })
