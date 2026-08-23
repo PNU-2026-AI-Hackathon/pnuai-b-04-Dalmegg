@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     app_name: str = "app_name"
     api_prefix: str = "/api"
     database_url: str = "mysql+asyncmy://root:password@127.0.0.1:3306/dbname"
-    jwt_secret_key: str = Field(default="test", min_length=16)
+    jwt_secret_key: str = Field(default="development-only-secret", min_length=16)
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
     refresh_token_expire_minutes: int = 60 * 24 * 14

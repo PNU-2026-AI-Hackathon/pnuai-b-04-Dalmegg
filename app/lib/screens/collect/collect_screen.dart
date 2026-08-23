@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../main.dart';
+import '../../services/api_client.dart';
+import '../../state/egg_bloom_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/green_button.dart';
 
@@ -24,6 +25,7 @@ class _CollectScreenState extends State<CollectScreen> {
   String? _selectedLocation;
   int _amount = 0;
   bool _submitted = false;
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -31,7 +33,7 @@ class _CollectScreenState extends State<CollectScreen> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_selectedLocation == null || _amount <= 0) {
       ScaffoldMessenger.of(
         context,
@@ -39,18 +41,30 @@ class _CollectScreenState extends State<CollectScreen> {
       return;
     }
 
-    context.read<EggBloomState>().addCollection(
-      location: _selectedLocation!,
-      grams: _amount,
-    );
-    _memoController.clear();
-    setState(() {
-      _submitted = true;
-      _amount = 0;
-    });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('수거 등록이 완료되었습니다')));
+    setState(() => _submitting = true);
+    try {
+      await context.read<EggBloomState>().addCollection(
+        location: _selectedLocation!,
+        grams: _amount,
+        memo: _memoController.text,
+      );
+      if (!mounted) return;
+      _memoController.clear();
+      setState(() {
+        _submitted = true;
+        _amount = 0;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('수거 신청이 접수되었습니다. 운영자 승인 후 반영됩니다.')),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
 
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
@@ -102,7 +116,7 @@ class _CollectScreenState extends State<CollectScreen> {
                           ),
                         ),
                         Text(
-                          '누적 기여량이 업데이트됐어요',
+                          '운영자 승인 대기 목록에 추가됐어요',
                           style: TextStyle(
                             fontSize: 12,
                             color: Color(0xFF4A8A4E),
@@ -262,7 +276,10 @@ class _CollectScreenState extends State<CollectScreen> {
             ),
             const SizedBox(height: 14),
           ],
-          GreenButton(label: '수거 참여 등록하기 🌱', onPressed: _submit),
+          GreenButton(
+            label: _submitting ? '접수 중...' : '수거 참여 등록하기 🌱',
+            onPressed: _submitting ? () {} : _submit,
+          ),
           const SizedBox(height: 24),
         ],
       ),

@@ -143,8 +143,19 @@ function persistOperator(operator: AuthOperator) {
 }
 
 function toAuthOperator(account: OperatorAccount): AuthOperator {
-  const { password, ...operator } = account
-  return operator
+  return {
+    id: account.id,
+    email: account.email,
+    full_name: account.full_name,
+    is_active: account.is_active,
+    role: account.role,
+    shop_id: account.shop_id,
+    shop_name: account.shop_name,
+    region: account.region,
+    address: account.address,
+    phone: account.phone,
+    description: account.description,
+  }
 }
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string) {

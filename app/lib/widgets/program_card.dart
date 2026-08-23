@@ -14,7 +14,7 @@ class ProgramCard extends StatelessWidget {
 
   final Program program;
   final bool booked;
-  final VoidCallback onReserve;
+  final Future<void> Function() onReserve;
 
   @override
   Widget build(BuildContext context) {
@@ -133,11 +133,16 @@ class ProgramCard extends StatelessWidget {
                             child: const Text('예약 완료'),
                           )
                         : ElevatedButton(
-                            onPressed: () {
-                              onReserve();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('예약이 완료되었습니다')),
-                              );
+                            onPressed: () async {
+                              try {
+                                await onReserve();
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('예약이 완료되었습니다')),
+                                );
+                              } catch (_) {
+                                // The parent displays the actionable API error.
+                              }
                             },
                             child: const Text('예약하기'),
                           ),

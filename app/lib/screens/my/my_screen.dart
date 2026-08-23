@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../main.dart';
+import '../../state/egg_bloom_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/contribution_card.dart';
 
@@ -56,9 +56,9 @@ class MyScreen extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const Text(
-                          '순환러 ID: eco_1234',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        Text(
+                          state.userEmail.isEmpty ? '순환형 플라워팜 멤버' : state.userEmail,
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         const SizedBox(height: 6),
                         const _LevelBadge(),
@@ -98,7 +98,7 @@ class MyScreen extends StatelessWidget {
                   children: [
                     _StatBox(
                       emoji: '🔄',
-                      value: '${state.collectionRecords.length}회',
+                      value: '${state.contributionCount}회',
                       label: '참여 횟수',
                     ),
                     const SizedBox(width: 8),
@@ -115,6 +115,29 @@ class MyScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _StatBox(
+                      emoji: '🌍',
+                      value: '${state.savedCo2Kg.toStringAsFixed(2)}kg',
+                      label: 'CO₂ 절감',
+                    ),
+                    const SizedBox(width: 8),
+                    _StatBox(
+                      emoji: '⭐',
+                      value: '${state.rewardPoints}P',
+                      label: '리워드',
+                    ),
+                  ],
+                ),
+                if (state.pendingContributionCount > 0) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '승인 대기 중인 수거 신청 ${state.pendingContributionCount}건',
+                    style: const TextStyle(fontSize: 11, color: AppTheme.mutedText),
+                  ),
+                ],
                 const SizedBox(height: 20),
                 const Text(
                   '수거 참여 내역',
@@ -129,6 +152,14 @@ class MyScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 _BookingCard(state: state),
+                const SizedBox(height: 18),
+                OutlinedButton.icon(
+                  onPressed: state.isAuthenticated ? state.logout : state.showLogin,
+                  icon: Icon(state.isAuthenticated ? Icons.logout : Icons.login),
+                  label: Text(
+                    state.isAuthenticated ? '로그아웃' : '로그인하고 데이터 연동하기',
+                  ),
+                ),
                 const SizedBox(height: 24),
               ]),
             ),
@@ -146,6 +177,17 @@ class _HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (state.collectionRecords.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(18),
+          child: Text(
+            '아직 수거 참여 내역이 없습니다.',
+            style: TextStyle(fontSize: 12, color: AppTheme.mutedText),
+          ),
+        ),
+      );
+    }
     return Card(
       child: Column(
         children: state.collectionRecords.map((record) {
@@ -165,7 +207,7 @@ class _HistoryCard extends StatelessWidget {
             ),
             subtitle: Text(record.date, style: const TextStyle(fontSize: 11)),
             trailing: Text(
-              '+${record.grams}g',
+              record.status == 'pending' ? '승인 대기' : '+${record.grams}g',
               style: const TextStyle(
                 fontWeight: FontWeight.w900,
                 color: AppTheme.primaryGreen,

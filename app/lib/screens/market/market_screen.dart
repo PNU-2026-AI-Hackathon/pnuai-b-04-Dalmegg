@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../main.dart';
+import '../../services/api_client.dart';
+import '../../state/egg_bloom_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/flower_card.dart';
 
@@ -42,7 +43,21 @@ class MarketScreen extends StatelessWidget {
           ...flowers.map(
             (flower) => Padding(
               padding: const EdgeInsets.only(bottom: 14),
-              child: FlowerCard(flower: flower),
+              child: FlowerCard(
+                flower: flower,
+                onOrder: () async {
+                  try {
+                    await context.read<EggBloomState>().orderFlower(flower);
+                  } on ApiException catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error.message)),
+                      );
+                    }
+                    rethrow;
+                  }
+                },
+              ),
             ),
           ),
         ],

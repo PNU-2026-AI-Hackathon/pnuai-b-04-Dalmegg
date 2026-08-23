@@ -4,9 +4,10 @@ import '../models/flower.dart';
 import '../theme/app_theme.dart';
 
 class FlowerCard extends StatefulWidget {
-  const FlowerCard({super.key, required this.flower});
+  const FlowerCard({super.key, required this.flower, required this.onOrder});
 
   final Flower flower;
+  final Future<void> Function() onOrder;
 
   @override
   State<FlowerCard> createState() => _FlowerCardState();
@@ -14,6 +15,7 @@ class FlowerCard extends StatefulWidget {
 
 class _FlowerCardState extends State<FlowerCard> {
   bool _requested = false;
+  bool _ordering = false;
 
   @override
   Widget build(BuildContext context) {
@@ -146,13 +148,30 @@ class _FlowerCardState extends State<FlowerCard> {
                           child: const Text('구매 요청됨'),
                         )
                       : ElevatedButton(
-                          onPressed: () {
-                            setState(() => _requested = true);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('구매 요청이 완료되었습니다')),
-                            );
+                          onPressed: _ordering || widget.flower.stock <= 0
+                              ? null
+                              : () async {
+                            setState(() => _ordering = true);
+                            try {
+                              await widget.onOrder();
+                              if (!mounted) return;
+                              setState(() => _requested = true);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('주문이 완료되었습니다')),
+                              );
+                            } catch (_) {
+                              // The parent displays the actionable API error.
+                            } finally {
+                              if (mounted) setState(() => _ordering = false);
+                            }
                           },
-                          child: const Text('구매 요청'),
+                          child: Text(
+                            widget.flower.stock <= 0
+                                ? '품절'
+                                : _ordering
+                                    ? '주문 중...'
+                                    : '1개 주문하기',
+                          ),
                         ),
                 ),
               ],

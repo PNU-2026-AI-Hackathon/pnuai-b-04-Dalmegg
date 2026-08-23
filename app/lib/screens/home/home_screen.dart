@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../main.dart';
 import '../../models/flower.dart';
 import '../../models/program.dart';
+import '../../state/egg_bloom_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/contribution_card.dart';
 import '../../widgets/grade_card.dart';
@@ -97,25 +97,53 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 SectionHeader(title: '추천 꽃 상품', onMore: () {}),
                 const SizedBox(height: 10),
-                SizedBox(
-                  height: 180,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: state.flowers.take(3).length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
-                    itemBuilder: (context, index) =>
-                        _MiniFlowerCard(flower: state.flowers[index]),
+                if (state.flowers.isEmpty)
+                  const _EmptyCatalog(message: '현재 판매 중인 꽃이 없습니다.')
+                else
+                  SizedBox(
+                    height: 180,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: state.flowers.take(3).length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 10),
+                      itemBuilder: (context, index) =>
+                          _MiniFlowerCard(flower: state.flowers[index]),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 20),
                 SectionHeader(title: '추천 꽃꾸 체험', onMore: () {}),
                 const SizedBox(height: 10),
-                _FeaturedProgramCard(program: state.programs.first),
+                if (state.programs.isEmpty)
+                  const _EmptyCatalog(message: '현재 예약 가능한 체험이 없습니다.')
+                else
+                  _FeaturedProgramCard(program: state.programs.first),
                 const SizedBox(height: 16),
               ]),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyCatalog extends StatelessWidget {
+  const _EmptyCatalog({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(fontSize: 12, color: AppTheme.mutedText),
       ),
     );
   }

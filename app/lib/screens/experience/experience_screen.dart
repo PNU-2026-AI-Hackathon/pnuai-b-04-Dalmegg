@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../main.dart';
+import '../../services/api_client.dart';
+import '../../state/egg_bloom_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/program_card.dart';
 
@@ -47,8 +48,17 @@ class ExperienceScreen extends StatelessWidget {
                     (item) => item.title == program.title,
                   ),
                 ),
-                onReserve: () {
-                  context.read<EggBloomState>().reserveProgram(program);
+                onReserve: () async {
+                  try {
+                    await context.read<EggBloomState>().reserveProgram(program);
+                  } on ApiException catch (error) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error.message)),
+                      );
+                    }
+                    rethrow;
+                  }
                 },
               ),
             ),

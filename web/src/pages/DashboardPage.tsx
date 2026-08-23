@@ -29,17 +29,17 @@ function getSensorStatus(value: number, min: number, max: number): SensorData['s
   return 'normal'
 }
 
-function formatSensorTime(value?: string) {
+function formatSensorTime(value?: string, currentTimeMs = 0) {
   if (!value) return '수신 시각 없음'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
-  const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
+  const minutes = Math.max(0, Math.round((currentTimeMs - date.getTime()) / 60000))
   if (minutes < 1) return '방금 전'
   if (minutes < 60) return `${minutes}분 전`
   return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit' }).format(date)
 }
 
-function toSensorData(latest: SensorLatestRead): SensorData[] {
+function toSensorData(latest: SensorLatestRead, currentTimeMs: number): SensorData[] {
   return sensorDefinition.flatMap((definition) => {
     const value = latest[definition.key]
     if (value === null || value === undefined) return []
@@ -50,7 +50,7 @@ function toSensorData(latest: SensorLatestRead): SensorData[] {
       unit: definition.unit,
       normalRange: `${definition.min.toLocaleString()}–${definition.max.toLocaleString()}${definition.unit}`,
       status: getSensorStatus(value, definition.min, definition.max),
-      updatedAt: formatSensorTime(latest.measured_at),
+      updatedAt: formatSensorTime(latest.measured_at, currentTimeMs),
     }]
   })
 }
@@ -73,8 +73,16 @@ export function DashboardPage() {
   const [sensorItems, setSensorItems] = useState<SensorData[]>(sensors)
   const [sensorUpdatedAt, setSensorUpdatedAt] = useState<string | null>(null)
   const [sensorSource, setSensorSource] = useState<'live' | 'fallback'>('fallback')
+  const [currentTimeMs, setCurrentTimeMs] = useState(0)
   const [resolvingAlert, setResolvingAlert] = useState<AdminAlert | null>(null)
   const [resolutionNote, setResolutionNote] = useState('')
+
+  useEffect(() => {
+    const updateCurrentTime = () => setCurrentTimeMs(Date.now())
+    updateCurrentTime()
+    const intervalId = window.setInterval(updateCurrentTime, 60_000)
+    return () => window.clearInterval(intervalId)
+  }, [])
 
   useEffect(() => {
     let ignore = false
@@ -99,7 +107,7 @@ export function DashboardPage() {
         const device = [...devices].sort((a, b) => (b.last_seen_at ?? '').localeCompare(a.last_seen_at ?? ''))[0]
         if (!device) throw new Error('No sensor device')
         const latest = await getLatestSensorReading(device.farm_uid, device.device_uid)
-        const nextSensors = toSensorData(latest)
+        const nextSensors = toSensorData(latest, Date.now())
         if (!ignore && nextSensors.length > 0) {
           setSensorItems(nextSensors)
           setSensorUpdatedAt(latest.measured_at)
@@ -118,8 +126,8 @@ export function DashboardPage() {
   const pendingReservations = reservationItems.filter((item) => item.status === 'reserved').length
   const lowStockItems = dashboardFlowerInventory.filter((item) => item.stock_quantity > 0 && item.stock_quantity <= 5).length
   const sensorIssue = sensorItems.find((sensor) => sensor.status !== 'normal')
-  const isSensorStale = sensorUpdatedAt ? Date.now() - new Date(sensorUpdatedAt).getTime() > 10 * 60 * 1000 : false
-  const sensorTrustText = sensorSource === 'live' && !isSensorStale ? `실시간 수신 · ${formatSensorTime(sensorUpdatedAt ?? undefined)}` : sensorSource === 'live' ? '수신 지연 · 데이터 확인 필요' : '연결 확인 필요 · 예시값 표시 중'
+  const isSensorStale = sensorUpdatedAt ? currentTimeMs - new Date(sensorUpdatedAt).getTime() > 10 * 60 * 1000 : false
+  const sensorTrustText = sensorSource === 'live' && !isSensorStale ? `실시간 수신 · ${formatSensorTime(sensorUpdatedAt ?? undefined, currentTimeMs)}` : sensorSource === 'live' ? '수신 지연 · 데이터 확인 필요' : '연결 확인 필요 · 예시값 표시 중'
   const sortedInventory = useMemo(() => [...dashboardFlowerInventory].sort((a, b) => a.stock_quantity - b.stock_quantity), [dashboardFlowerInventory])
 
   const openResolve = (alert: AdminAlert) => {
@@ -140,7 +148,7 @@ export function DashboardPage() {
         <div>
           <p className="text-[11px] font-bold tracking-[0.12em] text-rose-700">FARM OPERATIONS / TODAY</p>
           <h1 className="mt-2 text-[28px] font-semibold tracking-[-.05em] text-[#1d2921] md:text-[32px]">{operator?.shop_name ?? '스마트팜'} 운영 현황</h1>
-          <p className="mt-2 text-sm text-slate-500">{operator?.address ?? '담당 운영지'} · 센서 기준 {formatSensorTime(sensorUpdatedAt ?? undefined)}</p>
+          <p className="mt-2 text-sm text-slate-500">{operator?.address ?? '담당 운영지'} · 센서 기준 {formatSensorTime(sensorUpdatedAt ?? undefined, currentTimeMs)}</p>
         </div>
         <div className={`flex items-center gap-2 text-xs font-bold ${sensorSource === 'live' && !isSensorStale ? 'text-emerald-800' : 'text-amber-800'}`}>
           {sensorSource === 'live' && !isSensorStale ? <CheckCircle2 size={15} /> : <CloudOff size={15} />} {sensorTrustText}
