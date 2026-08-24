@@ -3,6 +3,14 @@
 > 가정 내 폐기물을 활용한 자원순환부터 꽃 재배, 지역 거래, 꽃꾸 체험까지 하나로 연결되는 도심형 스마트 농업 생태계
 > 
 
+## 주요 문서
+
+- [프로젝트 통합 기준 문서](docs/PROJECT_MASTER.md)
+- [AI 활용 및 고도화](docs/ai-usage.md)
+- [해커톤 README 참고 양식](docs/reference/SAMPLE_README.md)
+- [소비자 앱 실행 안내](app/README.md)
+- [관리자 웹 실행 안내](web/README.md)
+
 ## 1. 프로젝트 배경
 
 ### 1.1 국내외 (시장)현황 및 문제점
