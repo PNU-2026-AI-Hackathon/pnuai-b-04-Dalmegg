@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 
 import '../../models/flower.dart';
 import '../../models/program.dart';
-import '../../state/egg_bloom_state.dart';
+import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_illustration.dart';
 import '../../widgets/contribution_card.dart';
 import '../../widgets/grade_card.dart';
 import '../../widgets/section_header.dart';
@@ -57,17 +58,16 @@ class HomeScreen extends StatelessWidget {
                           color: Colors.white24,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
-                          Icons.local_florist,
-                          size: 18,
-                          color: Colors.white,
+                        child: const AppIllustration(
+                          type: IllustrationType.sprout,
+                          size: 28,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
                   const Text(
-                    '오늘도 자원순환에\n참여해볼까요? 🌱',
+                    '오늘도 자원순환에\n참여해볼까요?',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -98,7 +98,7 @@ class HomeScreen extends StatelessWidget {
                 SectionHeader(title: '추천 꽃 상품', onMore: () {}),
                 const SizedBox(height: 10),
                 if (state.flowers.isEmpty)
-                  const _EmptyCatalog(message: '현재 판매 중인 꽃이 없습니다.')
+                  const _LoadingCard(label: '추천 꽃 상품을 불러오는 중입니다.')
                 else
                   SizedBox(
                     height: 180,
@@ -114,7 +114,7 @@ class HomeScreen extends StatelessWidget {
                 SectionHeader(title: '추천 꽃꾸 체험', onMore: () {}),
                 const SizedBox(height: 10),
                 if (state.programs.isEmpty)
-                  const _EmptyCatalog(message: '현재 예약 가능한 체험이 없습니다.')
+                  const _LoadingCard(label: '추천 체험을 불러오는 중입니다.')
                 else
                   _FeaturedProgramCard(program: state.programs.first),
                 const SizedBox(height: 16),
@@ -127,23 +127,20 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _EmptyCatalog extends StatelessWidget {
-  const _EmptyCatalog({required this.message});
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard({required this.label});
 
-  final String message;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        message,
-        style: const TextStyle(fontSize: 12, color: AppTheme.mutedText),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppTheme.mutedText),
+        ),
       ),
     );
   }
@@ -176,7 +173,10 @@ class _MiniFlowerCard extends StatelessWidget {
                 top: Radius.circular(16),
               ),
             ),
-            child: Text(flower.emoji, style: const TextStyle(fontSize: 42)),
+            child: AppIllustration(
+              type: illustrationForFlower(flower.name, flower.emoji),
+              size: 70,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
@@ -233,9 +233,9 @@ class _FeaturedProgramCard extends StatelessWidget {
               color: AppTheme.lightGreen,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
-              Icons.palette_outlined,
-              color: AppTheme.primaryGreen,
+            child: const AppIllustration(
+              type: IllustrationType.flowerClass,
+              size: 48,
             ),
           ),
           const SizedBox(width: 12),

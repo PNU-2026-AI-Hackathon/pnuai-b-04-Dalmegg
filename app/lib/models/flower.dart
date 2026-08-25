@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class Flower {
   const Flower({
-    this.id = 0,
-    this.shopId = 0,
+    required this.id,
+    required this.shopId,
     required this.name,
     required this.price,
     required this.location,
@@ -11,7 +11,6 @@ class Flower {
     required this.emoji,
     required this.stock,
     required this.bgColor,
-    this.imageUrl,
   });
 
   final int id;
@@ -23,36 +22,39 @@ class Flower {
   final String emoji;
   final int stock;
   final Color bgColor;
-  final String? imageUrl;
 
   factory Flower.fromJson(Map<String, dynamic> json) {
-    final price = (json['price'] as num?)?.toDouble() ?? 0;
-    final color = (json['color'] as String?)?.toLowerCase() ?? '';
-    final presentation = switch (color) {
-      'red' || 'pink' || '빨강' || '분홍' => ('🌹', const Color(0xFFFFEBEE)),
-      'yellow' || '노랑' => ('🌼', const Color(0xFFFFFDE7)),
-      'purple' || '보라' => ('🪻', const Color(0xFFF3E5F5)),
-      _ => ('🌸', const Color(0xFFFCE4EC)),
-    };
     return Flower(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      shopId: (json['shop_id'] as num?)?.toInt() ?? 0,
-      name: json['name'] as String? ?? '이름 없는 꽃',
-      price: '${_formatPrice(price)}원',
-      location: '스마트팜 #${json['shop_id'] ?? '-'}',
-      description: json['description'] as String? ?? '친환경 스마트팜에서 재배한 꽃입니다.',
-      emoji: presentation.$1,
-      stock: (json['stock_quantity'] as num?)?.toInt() ?? 0,
-      bgColor: presentation.$2,
-      imageUrl: json['image_url'] as String?,
+      id: json['id'] as int,
+      shopId: json['shop_id'] as int? ?? 0,
+      name: json['name'] as String,
+      price: '${json['price']}원',
+      location:
+          json['shop_name'] as String? ??
+          json['location'] as String? ??
+          '제휴 꽃집',
+      description: json['description'] as String? ?? '',
+      emoji: _emojiForColor(json['color'] as String?),
+      stock: json['stock_quantity'] as int? ?? 0,
+      bgColor: _backgroundForColor(json['color'] as String?),
     );
   }
 
-  static String _formatPrice(double value) {
-    final digits = value.round().toString();
-    return digits.replaceAllMapped(
-      RegExp(r'\B(?=(\d{3})+(?!\d))'),
-      (_) => ',',
-    );
+  static String _emojiForColor(String? color) {
+    return switch (color) {
+      'red' => '🌹',
+      'yellow' => '🌼',
+      'pink' => '🌷',
+      _ => '🌸',
+    };
+  }
+
+  static Color _backgroundForColor(String? color) {
+    return switch (color) {
+      'red' => const Color(0xFFFFEBEE),
+      'yellow' => const Color(0xFFFFFDE7),
+      'pink' => const Color(0xFFFCE4EC),
+      _ => const Color(0xFFFCE4F0),
+    };
   }
 }
