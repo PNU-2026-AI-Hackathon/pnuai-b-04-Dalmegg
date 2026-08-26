@@ -5,6 +5,7 @@ from app.api.routes import (
     admin_orders,
     admin_sensors,
     admin_workshops,
+    ai_prototype,
     auth,
     bouquet_orders,
     chat,
@@ -26,6 +27,7 @@ from app.api.routes import (
 
 
 api_router = APIRouter()
+api_router.include_router(ai_prototype.router)
 api_router.include_router(auth.router)
 api_router.include_router(admin_auth.router)
 api_router.include_router(admin_orders.router)

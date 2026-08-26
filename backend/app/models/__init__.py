@@ -1,4 +1,7 @@
 from app.models.admin_user import AdminUser
+from app.models.ai_growth_image import AiGrowthImage
+from app.models.ai_growth_sample import AiGrowthSample
+from app.models.ai_model_training_run import AiModelTrainingRun
 from app.models.bouquet_order import BouquetOrder
 from app.models.chat_room import ChatRoom
 from app.models.eco_contribution_log import EcoContributionLog
@@ -24,6 +27,9 @@ from app.models.workshop_program import WorkshopProgram
 
 __all__ = [
     "AdminUser",
+    "AiGrowthImage",
+    "AiGrowthSample",
+    "AiModelTrainingRun",
     "BouquetOrder",
     "ChatRoom",
     "EcoContributionLog",
