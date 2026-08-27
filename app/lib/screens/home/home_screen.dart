@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/flower.dart';
@@ -8,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/app_illustration.dart';
 import '../../widgets/contribution_card.dart';
 import '../../widgets/grade_card.dart';
+import '../../widgets/flower_image.dart';
 import '../../widgets/section_header.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -44,7 +46,7 @@ class HomeScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'Egg Bloom',
+                        '닮은살걀',
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 12,
@@ -77,7 +79,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${state.userName}님 · 새싹 등급',
+                    '${state.userName}님 · 리워드 ${state.rewardPoints}P',
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
@@ -95,10 +97,17 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 GradeCard(totalGrams: state.totalGrams),
                 const SizedBox(height: 20),
-                SectionHeader(title: '추천 꽃 상품', onMore: () {}),
+                SectionHeader(
+                  title: '추천 꽃 상품',
+                  onMore: () => context.go('/?tab=2'),
+                ),
                 const SizedBox(height: 10),
                 if (state.flowers.isEmpty)
-                  const _LoadingCard(label: '추천 꽃 상품을 불러오는 중입니다.')
+                  _LoadingCard(
+                    label: state.isLoading
+                        ? '추천 꽃 상품을 불러오는 중입니다.'
+                        : '현재 등록된 꽃 상품이 없습니다.',
+                  )
                 else
                   SizedBox(
                     height: 180,
@@ -111,10 +120,17 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: 20),
-                SectionHeader(title: '추천 꽃꾸 체험', onMore: () {}),
+                SectionHeader(
+                  title: '추천 꽃꾸 체험',
+                  onMore: () => context.go('/?tab=3'),
+                ),
                 const SizedBox(height: 10),
                 if (state.programs.isEmpty)
-                  const _LoadingCard(label: '추천 체험을 불러오는 중입니다.')
+                  _LoadingCard(
+                    label: state.isLoading
+                        ? '추천 체험을 불러오는 중입니다.'
+                        : '현재 등록된 체험이 없습니다.',
+                  )
                 else
                   _FeaturedProgramCard(program: state.programs.first),
                 const SizedBox(height: 16),
@@ -173,10 +189,8 @@ class _MiniFlowerCard extends StatelessWidget {
                 top: Radius.circular(16),
               ),
             ),
-            child: AppIllustration(
-              type: illustrationForFlower(flower.name, flower.emoji),
-              size: 70,
-            ),
+            clipBehavior: Clip.antiAlias,
+            child: FlowerImage(flower: flower, illustrationSize: 70),
           ),
           Padding(
             padding: const EdgeInsets.all(10),

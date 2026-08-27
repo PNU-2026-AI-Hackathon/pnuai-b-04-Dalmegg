@@ -13,7 +13,7 @@ import '../repositories/shop_repository.dart';
 import '../repositories/user_repository.dart';
 
 class EggBloomState extends ChangeNotifier {
-  EggBloomState()
+  EggBloomState({bool autoLoad = true})
     : this._internal(
         const MockUserRepository(),
         const MockCollectionRepository(),
@@ -22,6 +22,7 @@ class EggBloomState extends ChangeNotifier {
         const MockProgramRepository(),
         const MockReservationRepository(),
         const MockShopRepository(),
+        autoLoad,
       );
 
   EggBloomState.withRepositories({
@@ -32,6 +33,7 @@ class EggBloomState extends ChangeNotifier {
     required ProgramRepository programRepository,
     required ReservationRepository reservationRepository,
     required ShopRepository shopRepository,
+    bool autoLoad = true,
   }) : this._internal(
          userRepository,
          collectionRepository,
@@ -40,6 +42,7 @@ class EggBloomState extends ChangeNotifier {
          programRepository,
          reservationRepository,
          shopRepository,
+         autoLoad,
        );
 
   EggBloomState._internal(
@@ -50,8 +53,11 @@ class EggBloomState extends ChangeNotifier {
     this._programRepository,
     this._reservationRepository,
     this._shopRepository,
+    bool autoLoad,
   ) {
-    loadInitialData();
+    if (autoLoad) {
+      loadInitialData();
+    }
   }
 
   static const int rewardGoalGrams = 500;
@@ -78,6 +84,14 @@ class EggBloomState extends ChangeNotifier {
   final List<Flower> flowers = [];
   final List<Program> programs = [];
   final List<Shop> shops = [];
+  final Set<int> _reservingProgramIds = {};
+  final Set<int> _cancellingReservationIds = {};
+
+  bool isReservingProgram(int programId) =>
+      _reservingProgramIds.contains(programId);
+
+  bool isCancellingReservation(int reservationId) =>
+      _cancellingReservationIds.contains(reservationId);
 
   int get remainingGrams {
     final remaining = rewardGoalGrams - totalGrams;
@@ -98,8 +112,7 @@ class EggBloomState extends ChangeNotifier {
         await request();
       } catch (error, stackTrace) {
         failedLoads.add(label);
-        debugPrint('$label 로딩 실패: $error');
-        debugPrintStack(stackTrace: stackTrace);
+        debugPrint('$label 로딩 실패: $error\n$stackTrace');
       }
     }
 
@@ -146,6 +159,9 @@ class EggBloomState extends ChangeNotifier {
       }),
     ]);
 
+    _hydrateProgramLocations();
+    _hydrateReservations();
+
     if (failedLoads.isNotEmpty) {
       errorMessage = '일부 데이터를 불러오지 못했습니다: ${failedLoads.join(', ')}';
     }
@@ -159,6 +175,7 @@ class EggBloomState extends ChangeNotifier {
     required String memo,
   }) async {
     final record = await _collectionRepository.submitCollection(
+      location: location,
       grams: grams,
       memo: memo,
     );
@@ -198,11 +215,69 @@ class EggBloomState extends ChangeNotifier {
   }
 
   Future<void> reserveProgram(Program program) async {
-    if (reservations.any((item) => item.id == program.id)) {
+    if (reservations.any(
+          (item) =>
+              item.id == program.id && item.reservationStatus != 'cancelled',
+        ) ||
+        _reservingProgramIds.contains(program.id)) {
       return;
     }
-    await _reservationRepository.createReservation(programId: program.id);
-    reservations.insert(0, program);
+    _reservingProgramIds.add(program.id);
     notifyListeners();
+    try {
+      final reservation = await _reservationRepository.createReservation(
+        programId: program.id,
+      );
+      reservations.insert(0, reservation.withProgramDetails(program));
+    } finally {
+      _reservingProgramIds.remove(program.id);
+      notifyListeners();
+    }
+  }
+
+  Future<void> cancelReservation(Program reservation) async {
+    final reservationId = reservation.reservationId;
+    if (reservationId == null ||
+        _cancellingReservationIds.contains(reservationId)) {
+      return;
+    }
+    _cancellingReservationIds.add(reservationId);
+    notifyListeners();
+    try {
+      await _reservationRepository.cancelReservation(
+        reservationId: reservationId,
+      );
+      final index = reservations.indexWhere(
+        (item) => item.reservationId == reservationId,
+      );
+      if (index >= 0) {
+        reservations[index] = reservations[index].withReservationStatus(
+          'cancelled',
+        );
+      }
+    } finally {
+      _cancellingReservationIds.remove(reservationId);
+      notifyListeners();
+    }
+  }
+
+  void _hydrateReservations() {
+    final programsById = {for (final program in programs) program.id: program};
+    for (var index = 0; index < reservations.length; index += 1) {
+      final details = programsById[reservations[index].id];
+      if (details != null) {
+        reservations[index] = reservations[index].withProgramDetails(details);
+      }
+    }
+  }
+
+  void _hydrateProgramLocations() {
+    final shopsById = {for (final shop in shops) shop.id: shop};
+    for (var index = 0; index < programs.length; index += 1) {
+      final shop = shopsById[programs[index].shopId];
+      if (shop != null) {
+        programs[index] = programs[index].withLocation(shop.name);
+      }
+    }
   }
 }

@@ -26,6 +26,7 @@ class _CollectScreenState extends State<CollectScreen> {
   String? _selectedLocation;
   int _amount = 0;
   bool _submitted = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -41,26 +42,39 @@ class _CollectScreenState extends State<CollectScreen> {
       return;
     }
 
-    await context.read<EggBloomState>().addCollection(
-      location: _selectedLocation!,
-      grams: _amount,
-      memo: _memoController.text.trim(),
-    );
-    _memoController.clear();
-    setState(() {
-      _submitted = true;
-      _amount = 0;
-    });
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('수거 등록이 완료되었습니다. 관리자 확인 후 반영돼요')),
-    );
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await context.read<EggBloomState>().addCollection(
+        location: _selectedLocation!,
+        grams: _amount,
+        memo: _memoController.text.trim(),
+      );
+      _memoController.clear();
+      if (!mounted) return;
+      setState(() {
+        _submitted = true;
+        _amount = 0;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('수거 등록이 완료되었습니다. 관리자 확인 후 반영돼요')),
+      );
 
-    Future.delayed(const Duration(seconds: 3), () {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) {
+          setState(() => _submitted = false);
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('수거 등록에 실패했습니다. 잠시 후 다시 시도해주세요.')),
+      );
+    } finally {
       if (mounted) {
-        setState(() => _submitted = false);
+        setState(() => _isSubmitting = false);
       }
-    });
+    }
   }
 
   @override
@@ -347,7 +361,10 @@ class _CollectScreenState extends State<CollectScreen> {
             ),
             const SizedBox(height: 14),
           ],
-          GreenButton(label: '수거 참여 등록하기', onPressed: _submit),
+          GreenButton(
+            label: _isSubmitting ? '등록 중...' : '수거 참여 등록하기',
+            onPressed: _isSubmitting ? null : _submit,
+          ),
           const SizedBox(height: 24),
         ],
       ),

@@ -10,12 +10,14 @@ class ProgramCard extends StatelessWidget {
     super.key,
     required this.program,
     required this.booked,
+    required this.isReserving,
     required this.onReserve,
   });
 
   final Program program;
   final bool booked;
-  final VoidCallback onReserve;
+  final bool isReserving;
+  final Future<void> Function() onReserve;
 
   @override
   Widget build(BuildContext context) {
@@ -162,19 +164,50 @@ class ProgramCard extends StatelessWidget {
                             ),
                           )
                         : ElevatedButton(
-                            onPressed: () {
-                              onReserve();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('예약이 완료되었습니다')),
-                              );
-                            },
+                            onPressed:
+                                isReserving || program.remainingSpots <= 0
+                                ? null
+                                : () async {
+                                    try {
+                                      await onReserve();
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('예약이 완료되었습니다'),
+                                        ),
+                                      );
+                                    } catch (_) {
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            '예약에 실패했습니다. 잔여 좌석과 예약 내역을 확인해주세요.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
                             style: ElevatedButton.styleFrom(
                               minimumSize: const Size(96, 42),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
                             ),
-                            child: const Text('예약하기'),
+                            child: isReserving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    program.remainingSpots <= 0 ? '마감' : '예약하기',
+                                  ),
                           ),
                   ],
                 ),

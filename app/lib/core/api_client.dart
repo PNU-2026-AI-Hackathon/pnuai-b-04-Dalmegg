@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,6 +15,10 @@ class ApiClient {
   final Uri baseUrl;
   final TokenStorage tokenStorage;
   final HttpClient _httpClient;
+  Future<bool>? _refreshingToken;
+  void Function()? onAuthenticationExpired;
+
+  static const _requestTimeout = Duration(seconds: 12);
 
   Future<Map<String, dynamic>> getJson(String path) async {
     final response = await _send('GET', path);
@@ -52,29 +57,101 @@ class ApiClient {
     String method,
     String path, {
     Map<String, dynamic>? body,
+    bool allowRefresh = true,
   }) async {
-    final request = await _httpClient.openUrl(method, baseUrl.resolve(path));
-    request.headers.contentType = ContentType.json;
+    try {
+      final request = await _httpClient
+          .openUrl(method, baseUrl.resolve(path))
+          .timeout(_requestTimeout);
+      request.headers.contentType = ContentType.json;
 
-    final token = await tokenStorage.readAccessToken();
-    if (token != null && token.isNotEmpty) {
-      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
+      final token = await tokenStorage.readAccessToken();
+      if (token != null && token.isNotEmpty) {
+        request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
+      }
+
+      if (body != null) {
+        request.write(jsonEncode(body));
+      }
+
+      final response = await request.close().timeout(_requestTimeout);
+      final text = await response
+          .transform(utf8.decoder)
+          .join()
+          .timeout(_requestTimeout);
+      if (response.statusCode == HttpStatus.unauthorized &&
+          !_isAuthEntryPoint(path)) {
+        if (allowRefresh && await _refreshAccessToken()) {
+          return await _send(method, path, body: body, allowRefresh: false);
+        }
+        await tokenStorage.clear();
+        onAuthenticationExpired?.call();
+      }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          statusCode: response.statusCode,
+          message: _messageForStatus(response.statusCode),
+          body: text.isEmpty ? null : text,
+        );
+      }
+      return text.isEmpty ? '{}' : text;
+    } on TimeoutException {
+      throw const ApiException(statusCode: 408, message: '서버 응답 시간이 초과되었습니다.');
     }
+  }
 
-    if (body != null) {
-      request.write(jsonEncode(body));
-    }
+  bool _isAuthEntryPoint(String path) =>
+      path == '/api/auth/login' ||
+      path == '/api/auth/register' ||
+      path == '/api/auth/refresh';
 
-    final response = await request.close();
-    final text = await response.transform(utf8.decoder).join();
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        statusCode: response.statusCode,
-        message: _messageForStatus(response.statusCode),
-        body: text.isEmpty ? null : text,
+  Future<bool> _refreshAccessToken() {
+    final inFlight = _refreshingToken;
+    if (inFlight != null) return inFlight;
+
+    final refresh = _performTokenRefresh();
+    _refreshingToken = refresh;
+    return refresh.whenComplete(() => _refreshingToken = null);
+  }
+
+  Future<bool> _performTokenRefresh() async {
+    final refreshToken = await tokenStorage.readRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+
+    try {
+      final request = await _httpClient
+          .postUrl(baseUrl.resolve('/api/auth/refresh'))
+          .timeout(_requestTimeout);
+      request.headers.contentType = ContentType.json;
+      request.write(jsonEncode({'refresh_token': refreshToken}));
+      final response = await request.close().timeout(_requestTimeout);
+      final text = await response
+          .transform(utf8.decoder)
+          .join()
+          .timeout(_requestTimeout);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        await tokenStorage.clear();
+        return false;
+      }
+      final decoded = jsonDecode(text);
+      if (decoded is! Map<String, dynamic>) {
+        await tokenStorage.clear();
+        return false;
+      }
+      final accessToken = decoded['access_token'];
+      final nextRefreshToken = decoded['refresh_token'];
+      if (accessToken is! String || nextRefreshToken is! String) {
+        await tokenStorage.clear();
+        return false;
+      }
+      await tokenStorage.saveTokens(
+        accessToken: accessToken,
+        refreshToken: nextRefreshToken,
       );
+      return true;
+    } catch (_) {
+      return false;
     }
-    return text.isEmpty ? '{}' : text;
   }
 
   Map<String, dynamic> _decodeObject(String response) {

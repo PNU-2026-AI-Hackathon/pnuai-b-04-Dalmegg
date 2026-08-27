@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/collection_record.dart';
+import '../../models/program.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_illustration.dart';
@@ -61,12 +62,15 @@ class MyScreen extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const Text(
-                          '순환러 ID: eco_1234',
-                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        Text(
+                          '리워드 ${state.rewardPoints}P',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
                         ),
                         const SizedBox(height: 6),
-                        const _LevelBadge(),
+                        _LevelBadge(totalGrams: state.totalGrams),
                       ],
                     ),
                   ),
@@ -162,6 +166,43 @@ class MyScreen extends StatelessWidget {
   }
 }
 
+Future<void> _cancelReservation(
+  BuildContext context,
+  Program reservation,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('체험 예약 취소'),
+      content: Text('${reservation.title} 예약을 취소할까요?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('돌아가기'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('예약 취소'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  try {
+    await context.read<EggBloomState>().cancelReservation(reservation);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('예약이 취소되었습니다')));
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('예약 취소에 실패했습니다. 잠시 후 다시 시도해주세요.')),
+    );
+  }
+}
+
 class _HistoryCard extends StatelessWidget {
   const _HistoryCard({required this.state});
 
@@ -169,6 +210,18 @@ class _HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (state.collectionRecords.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(18),
+          child: Text(
+            '아직 수거 참여 내역이 없습니다.',
+            style: TextStyle(fontSize: 12, color: AppTheme.mutedText),
+          ),
+        ),
+      );
+    }
+
     return Card(
       child: Column(
         children: state.collectionRecords.map((record) {
@@ -253,23 +306,52 @@ class _BookingCard extends StatelessWidget {
               '${program.date} · ${program.location}',
               style: const TextStyle(fontSize: 11),
             ),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: AppTheme.lightGreen,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                '예약중',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primaryGreen,
-                ),
-              ),
-            ),
+            trailing: _ReservationAction(program: program),
           );
         }).toList(),
+      ),
+    );
+  }
+}
+
+class _ReservationAction extends StatelessWidget {
+  const _ReservationAction({required this.program});
+
+  final Program program;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<EggBloomState>();
+    final reservationId = program.reservationId;
+    final isCancelling =
+        reservationId != null && state.isCancellingReservation(reservationId);
+
+    if (program.canCancelReservation) {
+      return TextButton(
+        onPressed: isCancelling
+            ? null
+            : () => _cancelReservation(context, program),
+        child: Text(isCancelling ? '취소 중' : '예약 취소'),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: program.reservationStatus == 'cancelled'
+            ? AppTheme.warmMuted
+            : AppTheme.lightGreen,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        program.reservationStatusLabel,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: program.reservationStatus == 'cancelled'
+              ? AppTheme.mutedText
+              : AppTheme.primaryGreen,
+        ),
       ),
     );
   }
@@ -317,7 +399,9 @@ class _StatBox extends StatelessWidget {
 }
 
 class _LevelBadge extends StatelessWidget {
-  const _LevelBadge();
+  const _LevelBadge({required this.totalGrams});
+
+  final int totalGrams;
 
   @override
   Widget build(BuildContext context) {
@@ -327,9 +411,9 @@ class _LevelBadge extends StatelessWidget {
         color: Colors.white24,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Text(
-        '새싹 Lv.2',
-        style: TextStyle(
+      child: Text(
+        '${totalGrams.toString()}g 기여',
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 11,
           fontWeight: FontWeight.w700,

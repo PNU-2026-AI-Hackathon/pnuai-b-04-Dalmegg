@@ -27,12 +27,42 @@ import 'widgets/bottom_nav_bar.dart';
 
 const _demoMode = bool.fromEnvironment('DEMO_MODE', defaultValue: false);
 
-void main() => runApp(const EggBloomApp(useMockRepositories: _demoMode));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (_demoMode) {
+    runApp(const EggBloomApp(useMockRepositories: true));
+    return;
+  }
+
+  final tokenStorage = SecureTokenStorage();
+  if (EggBloomApp._accessToken.isNotEmpty &&
+      EggBloomApp._refreshToken.isNotEmpty) {
+    await tokenStorage.saveTokens(
+      accessToken: EggBloomApp._accessToken,
+      refreshToken: EggBloomApp._refreshToken,
+    );
+  }
+  final hasStoredSession =
+      (await tokenStorage.readRefreshToken())?.isNotEmpty ?? false;
+  runApp(
+    EggBloomApp(
+      tokenStorage: tokenStorage,
+      initialAuthenticated: hasStoredSession,
+    ),
+  );
+}
 
 class EggBloomApp extends StatelessWidget {
-  const EggBloomApp({super.key, this.useMockRepositories = false});
+  const EggBloomApp({
+    super.key,
+    this.useMockRepositories = false,
+    this.tokenStorage,
+    this.initialAuthenticated = false,
+  });
 
   final bool useMockRepositories;
+  final TokenStorage? tokenStorage;
+  final bool initialAuthenticated;
 
   static const _apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
@@ -68,28 +98,31 @@ class EggBloomApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dependencies = _createApiDependencies();
+    final authSession = AuthSession(
+      authRepository: useMockRepositories
+          ? _MockAuthRepository()
+          : ApiAuthRepository(
+              apiClient: dependencies.apiClient,
+              tokenStorage: dependencies.tokenStorage,
+            ),
+      isAuthenticated:
+          useMockRepositories ||
+          initialAuthenticated ||
+          _accessToken.isNotEmpty,
+    );
+    dependencies.apiClient.onAuthenticationExpired = authSession.expireSession;
 
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => AuthSession(
-            authRepository: useMockRepositories
-                ? _MockAuthRepository()
-                : ApiAuthRepository(
-                    apiClient: dependencies.apiClient,
-                    tokenStorage: dependencies.tokenStorage,
-                  ),
-            isAuthenticated: useMockRepositories || _accessToken.isNotEmpty,
-          ),
-        ),
+        ChangeNotifierProvider(create: (_) => authSession),
         ChangeNotifierProvider(
           create: (_) => useMockRepositories
-              ? EggBloomState()
-              : _createApiState(dependencies.apiClient),
+              ? EggBloomState(autoLoad: false)
+              : _createApiState(dependencies.apiClient, autoLoad: false),
         ),
       ],
       child: MaterialApp.router(
-        title: 'Egg Bloom',
+        title: '닮은살걀',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         routerConfig: _router,
@@ -98,19 +131,24 @@ class EggBloomApp extends StatelessWidget {
   }
 
   _ApiDependencies _createApiDependencies() {
-    final tokenStorage = MemoryTokenStorage(
-      accessToken: _accessToken.isEmpty ? null : _accessToken,
-      refreshToken: _refreshToken.isEmpty ? null : _refreshToken,
-    );
+    final resolvedTokenStorage =
+        tokenStorage ??
+        MemoryTokenStorage(
+          accessToken: _accessToken.isEmpty ? null : _accessToken,
+          refreshToken: _refreshToken.isEmpty ? null : _refreshToken,
+        );
     final apiClient = ApiClient(
       baseUrl: Uri.parse(_apiBaseUrl),
-      tokenStorage: tokenStorage,
+      tokenStorage: resolvedTokenStorage,
     );
 
-    return _ApiDependencies(apiClient: apiClient, tokenStorage: tokenStorage);
+    return _ApiDependencies(
+      apiClient: apiClient,
+      tokenStorage: resolvedTokenStorage,
+    );
   }
 
-  EggBloomState _createApiState(ApiClient apiClient) {
+  EggBloomState _createApiState(ApiClient apiClient, {required bool autoLoad}) {
     return EggBloomState.withRepositories(
       userRepository: ApiUserRepository(apiClient: apiClient),
       collectionRepository: ApiCollectionRepository(apiClient: apiClient),
@@ -119,6 +157,7 @@ class EggBloomApp extends StatelessWidget {
       programRepository: ApiProgramRepository(apiClient: apiClient),
       reservationRepository: ApiReservationRepository(apiClient: apiClient),
       shopRepository: ApiShopRepository(apiClient: apiClient),
+      autoLoad: autoLoad,
     );
   }
 }

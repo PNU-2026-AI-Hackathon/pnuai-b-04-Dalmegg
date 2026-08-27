@@ -11,6 +11,7 @@ import '../../providers/auth_session.dart';
 import '../../repositories/order_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/flower_image.dart';
 
 class MarketDetailScreen extends StatefulWidget {
   const MarketDetailScreen({super.key, required this.marketId});
@@ -279,7 +280,7 @@ class _MarketDetailViewData {
     return _MarketDetailViewData(
       name: shop?.name ?? '꽃마켓',
       location: shop?.address.isNotEmpty == true ? shop!.address : '부산',
-      badge: (shop?.averageRating ?? 0) >= 4.7 ? '베스트' : 'ESG인증',
+      badge: (shop?.averageRating ?? 0) >= 4.7 ? '베스트' : '입점마켓',
       distance: _distanceLabel(shopId),
       openHours: '09:00–18:00',
       minimumOrder: '10,000원',
@@ -587,7 +588,8 @@ class FlowerProductCard extends StatelessWidget {
                 color: product.bgColor,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(product.emoji, style: const TextStyle(fontSize: 30)),
+              clipBehavior: Clip.antiAlias,
+              child: FlowerImage(flower: product, illustrationSize: 42),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -909,7 +911,8 @@ class _OrderSheetItem extends StatelessWidget {
             color: product.bgColor,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Text(product.emoji, style: const TextStyle(fontSize: 24)),
+          clipBehavior: Clip.antiAlias,
+          child: FlowerImage(flower: product, illustrationSize: 32),
         ),
         const SizedBox(width: 12),
         Expanded(
