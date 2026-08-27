@@ -46,51 +46,47 @@ class _MarketListScreenState extends State<MarketListScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: RefreshIndicator(
-        onRefresh: appState.loadInitialData,
-        child: CustomScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              title: const Text('꽃마켓'),
-              backgroundColor: Colors.transparent,
-              scrolledUnderElevation: 0,
-              foregroundColor: AppColors.foreground,
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 56),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _MarketSearchField(
-                    onChanged: (value) => setState(() => _query = value),
-                  ),
-                  const SizedBox(height: 14),
-                  const _EsgBanner(),
-                  const SizedBox(height: 14),
-                  _CategoryFilter(
-                    categories: _categories,
-                    selectedCategory: _selectedCategory,
-                    onSelected: (category) {
-                      setState(() => _selectedCategory = category);
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    child: _MarketListBody(
-                      key: ValueKey(
-                        '$_selectedCategory-${appState.isLoading}-${visibleMarkets.length}',
-                      ),
-                      isLoading: appState.isLoading,
-                      errorMessage: appState.errorMessage,
-                      markets: visibleMarkets,
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: appState.loadInitialData,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 56),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _MarketSearchField(
+                      onChanged: (value) => setState(() => _query = value),
                     ),
-                  ),
-                ]),
+                    const SizedBox(height: 14),
+                    const _EsgBanner(),
+                    const SizedBox(height: 14),
+                    _CategoryFilter(
+                      categories: _categories,
+                      selectedCategory: _selectedCategory,
+                      onSelected: (category) {
+                        setState(() => _selectedCategory = category);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: _MarketListBody(
+                        key: ValueKey(
+                          '$_selectedCategory-${appState.isLoading}-${visibleMarkets.length}',
+                        ),
+                        isLoading: appState.isLoading,
+                        errorMessage: appState.errorMessage,
+                        markets: visibleMarkets,
+                      ),
+                    ),
+                  ]),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
