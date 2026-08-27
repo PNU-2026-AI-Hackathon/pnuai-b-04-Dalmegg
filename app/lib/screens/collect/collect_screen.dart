@@ -262,38 +262,6 @@ class _CollectScreenState extends State<CollectScreen> {
           ),
           const SizedBox(height: 14),
           _FormCard(
-            title: '사진 첨부',
-            caption: '선택 사항',
-            child: GestureDetector(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('사진 첨부는 다음 버전에서 연결됩니다')),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                height: 112,
-                decoration: BoxDecoration(
-                  color: AppTheme.warmMuted.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.warmBorder),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AppIllustration(type: IllustrationType.egg, size: 44),
-                    SizedBox(height: 6),
-                    Text(
-                      '탭해서 사진 추가',
-                      style: TextStyle(fontSize: 13, color: AppTheme.mutedText),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          _FormCard(
             title: '메모',
             caption: '선택 사항',
             child: TextField(
