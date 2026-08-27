@@ -15,6 +15,7 @@ class OrderCreate(BaseModel):
 class OrderItemRead(BaseModel):
     id: int
     flower_id: int
+    flower_name: str | None = None
     quantity: int
     unit_price: float
     line_amount: float

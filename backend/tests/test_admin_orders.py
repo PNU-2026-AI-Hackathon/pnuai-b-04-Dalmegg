@@ -34,6 +34,7 @@ async def test_admin_can_list_orders_for_owned_shop(client):
     assert response.json()[0]["user_email"] == "admin-order-user@example.com"
     assert response.json()[0]["total_amount"] == 6000
     assert response.json()[0]["items"][0]["flower_id"] == flower_id
+    assert response.json()[0]["items"][0]["flower_name"] == "Rose"
 
 
 async def test_admin_cannot_list_orders_for_another_shop_id(client):
@@ -79,7 +80,9 @@ async def test_admin_order_detail_filters_to_requested_owned_shop(client):
 
     assert response.status_code == 200
     assert response.json()["total_amount"] == 3000
-    assert [item["flower_id"] for item in response.json()["items"]] == [first_flower_id]
+    assert [(item["flower_id"], item["flower_name"]) for item in response.json()["items"]] == [
+        (first_flower_id, "Rose")
+    ]
 
     forbidden_response = await client.get(
         f"/api/admin/orders/{order_id}",

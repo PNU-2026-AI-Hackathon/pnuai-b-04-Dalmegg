@@ -16,3 +16,8 @@ class OrderItem(Base):
 
     order = relationship("Order", back_populates="items")
     flower = relationship("Flower")
+
+    @property
+    def flower_name(self) -> str | None:
+        flower = self.__dict__.get("flower")
+        return flower.name if flower is not None else None
