@@ -101,6 +101,63 @@ def is_pump_loop_running(farm_uid: str, device_uid: str) -> bool:
     return task is not None and not task.done()
 
 
+def cancel_pump_control_loop(farm_uid: str, device_uid: str) -> None:
+    task = _pump_tasks.pop((farm_uid, device_uid), None)
+    if task is not None and not task.done():
+        task.cancel()
+
+
+async def disable_automation_and_turn_off_actuators(
+    db: AsyncSession,
+    *,
+    farm_uid: str,
+    device_uid: str,
+    settings: Settings | None = None,
+) -> tuple[SmartFarmAutomationSetting | None, list[dict]]:
+    settings = settings or get_settings()
+    device, setting, _, _ = await _latest_context(db, farm_uid=farm_uid, device_uid=device_uid)
+    if device is None or setting is None:
+        return None, []
+
+    setting.enabled = False
+    setting.updated_at = _utc_now()
+    await db.commit()
+    cancel_pump_control_loop(farm_uid, device_uid)
+
+    actions = []
+    now = _utc_now()
+    try:
+        await publish_pump_command(settings, farm_uid=farm_uid, device_uid=device_uid, state="off")
+        setting.last_pump_state = "off"
+        setting.last_pump_command_at = now
+        actions.append(
+            {"command": "pump", "state": "off", "reason": "automation_disabled", "published": True}
+        )
+    except MqttPublishError:
+        logger.exception("Failed to publish pump OFF command while disabling automation.")
+        actions.append(
+            {"command": "pump", "state": "off", "reason": "automation_disabled", "published": False}
+        )
+
+    try:
+        await publish_actuator_command(settings, farm_uid=farm_uid, device_uid=device_uid, command="led", state="off")
+        setting.last_led_state = "off"
+        setting.last_led_command_at = now
+        actions.append(
+            {"command": "led", "state": "off", "reason": "automation_disabled", "published": True}
+        )
+    except MqttPublishError:
+        logger.exception("Failed to publish LED OFF command while disabling automation.")
+        actions.append(
+            {"command": "led", "state": "off", "reason": "automation_disabled", "published": False}
+        )
+
+    setting.updated_at = _utc_now()
+    await db.commit()
+    await db.refresh(setting)
+    return setting, actions
+
+
 async def evaluate_light_automation(
     db: AsyncSession,
     *,

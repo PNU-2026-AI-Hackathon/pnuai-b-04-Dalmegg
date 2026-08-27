@@ -58,6 +58,87 @@ async def test_admin_can_enable_farm_automation(tmp_path):
     await engine.dispose()
 
 
+async def test_admin_disabling_automation_turns_off_pump_and_led(tmp_path, monkeypatch):
+    engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'farm-automation-disable.db'}", future=True)
+    TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
+    published = []
+
+    async def fake_publish_pump_command(settings, *, farm_uid: str, device_uid: str, state: str) -> None:
+        published.append(("pump", state, farm_uid, device_uid))
+
+    async def fake_publish_actuator_command(
+        settings,
+        *,
+        farm_uid: str,
+        device_uid: str,
+        command: str,
+        state: str,
+    ) -> None:
+        published.append((command, state, farm_uid, device_uid))
+
+    monkeypatch.setattr(farm_automation, "publish_pump_command", fake_publish_pump_command)
+    monkeypatch.setattr(farm_automation, "publish_actuator_command", fake_publish_actuator_command)
+
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with TestingSessionLocal() as db:
+        await handle_telemetry_message(
+            db,
+            topic="dalmegg/v1/farms/farm-001/devices/device-001/telemetry",
+            payload='{"message_id":"disable-001","soil_moisture_pct":30,"light_lux":1000}',
+        )
+        device = (
+            await db.execute(
+                select(SmartFarmDevice).where(
+                    SmartFarmDevice.farm_uid == "farm-001",
+                    SmartFarmDevice.device_uid == "device-001",
+                )
+            )
+        ).scalar_one()
+        db.add(
+            SmartFarmAutomationSetting(
+                device_id=device.id,
+                enabled=True,
+                last_pump_state="on",
+                last_led_state="on",
+            )
+        )
+        await db.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        token = await register_admin_and_login(client, "automation-disable-admin@example.com")
+        response = await client.patch(
+            "/api/admin/farms/farm-001/devices/device-001/automation",
+            json={"enabled": False},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["setting"]["enabled"] is False
+    assert response.json()["setting"]["last_pump_state"] == "off"
+    assert response.json()["setting"]["last_led_state"] == "off"
+    assert response.json()["actions"] == [
+        {"command": "pump", "state": "off", "reason": "automation_disabled", "published": True},
+        {"command": "led", "state": "off", "reason": "automation_disabled", "published": True},
+    ]
+    assert published == [
+        ("pump", "off", "farm-001", "device-001"),
+        ("led", "off", "farm-001", "device-001"),
+    ]
+
+    await engine.dispose()
+
+
 async def test_pump_control_loop_runs_pulse_until_soil_reaches_target(tmp_path, monkeypatch):
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'farm-automation-loop.db'}", future=True)
     TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)

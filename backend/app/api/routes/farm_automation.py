@@ -10,6 +10,7 @@ from app.schemas.farm_automation import (
     FarmAutomationStatus,
 )
 from app.services.farm_automation import (
+    disable_automation_and_turn_off_actuators,
     evaluate_device_automation,
     read_automation_status,
     update_automation_setting,
@@ -40,15 +41,25 @@ async def update_farm_automation_setting_endpoint(
     db: AsyncSession = Depends(get_db),
     _: AdminUser = Depends(get_current_admin),
 ):
-    setting = await update_automation_setting(
-        db,
-        farm_uid=farm_uid,
-        device_uid=device_uid,
-        values=automation_in.model_dump(exclude_unset=True),
-    )
+    actions = []
+    if automation_in.enabled is False:
+        setting, actions = await disable_automation_and_turn_off_actuators(
+            db,
+            farm_uid=farm_uid,
+            device_uid=device_uid,
+            settings=get_settings(),
+        )
+    else:
+        setting = await update_automation_setting(
+            db,
+            farm_uid=farm_uid,
+            device_uid=device_uid,
+            values=automation_in.model_dump(exclude_unset=True),
+        )
     if setting is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Device not found.")
     automation = await read_automation_status(db, farm_uid=farm_uid, device_uid=device_uid)
+    automation["actions"] = actions
     return automation
 
 
