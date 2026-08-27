@@ -21,3 +21,4 @@ class SmartFarmDevice(Base):
 
     latest_reading = relationship("SensorLatest", back_populates="device", uselist=False)
     readings = relationship("SensorReading", back_populates="device")
+    telemetry_data = relationship("TelemetryData", back_populates="device")

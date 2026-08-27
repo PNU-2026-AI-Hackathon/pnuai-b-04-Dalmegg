@@ -5,12 +5,14 @@ from app.api.routes import (
     admin_orders,
     admin_sensors,
     admin_workshops,
+    ai_prototype,
     auth,
     bouquet_orders,
     chat,
     collections,
     dashboard,
     eco,
+    farm_devices,
     favorites,
     flowers,
     orders,
@@ -25,6 +27,7 @@ from app.api.routes import (
 
 
 api_router = APIRouter()
+api_router.include_router(ai_prototype.router)
 api_router.include_router(auth.router)
 api_router.include_router(admin_auth.router)
 api_router.include_router(admin_orders.router)
@@ -39,6 +42,7 @@ api_router.include_router(flowers.router)
 api_router.include_router(reviews.router)
 api_router.include_router(favorites.router)
 api_router.include_router(eco.router)
+api_router.include_router(farm_devices.router)
 api_router.include_router(collections.router)
 api_router.include_router(participants.router)
 api_router.include_router(dashboard.router)
