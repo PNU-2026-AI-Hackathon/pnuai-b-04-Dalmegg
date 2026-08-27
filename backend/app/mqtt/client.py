@@ -14,11 +14,12 @@ class MqttPublishError(RuntimeError):
     pass
 
 
-async def publish_pump_command(
+async def publish_actuator_command(
     settings: Settings,
     *,
     farm_uid: str,
     device_uid: str,
+    command: str,
     state: str,
 ) -> None:
     try:
@@ -27,7 +28,7 @@ async def publish_pump_command(
         raise MqttPublishError("aiomqtt is not installed.") from exc
 
     topic = f"{settings.mqtt_topic_prefix.strip('/')}/farms/{farm_uid}/devices/{device_uid}/command"
-    payload = json.dumps({"command": "pump", "state": state}, separators=(",", ":"))
+    payload = json.dumps({"command": command, "state": state}, separators=(",", ":"))
 
     try:
         async with aiomqtt.Client(
@@ -38,7 +39,23 @@ async def publish_pump_command(
         ) as client:
             await client.publish(topic, payload=payload, qos=1)
     except Exception as exc:
-        raise MqttPublishError("Failed to publish MQTT pump command.") from exc
+        raise MqttPublishError("Failed to publish MQTT actuator command.") from exc
+
+
+async def publish_pump_command(
+    settings: Settings,
+    *,
+    farm_uid: str,
+    device_uid: str,
+    state: str,
+) -> None:
+    await publish_actuator_command(
+        settings,
+        farm_uid=farm_uid,
+        device_uid=device_uid,
+        command="pump",
+        state=state,
+    )
 
 
 async def run_mqtt_listener(settings: Settings) -> None:

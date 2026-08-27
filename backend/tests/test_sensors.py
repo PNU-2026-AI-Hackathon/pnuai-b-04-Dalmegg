@@ -178,3 +178,52 @@ async def test_pump_command_endpoint_publishes_mqtt(monkeypatch):
         "device_uid": "device-001",
         "state": "on",
     }
+
+
+async def test_led_command_endpoint_publishes_mqtt(monkeypatch):
+    published = {}
+
+    async def fake_publish_actuator_command(
+        settings,
+        *,
+        farm_uid: str,
+        device_uid: str,
+        command: str,
+        state: str,
+    ) -> None:
+        published["topic_prefix"] = settings.mqtt_topic_prefix
+        published["farm_uid"] = farm_uid
+        published["device_uid"] = device_uid
+        published["command"] = command
+        published["state"] = state
+
+    monkeypatch.setattr(farm_devices, "publish_actuator_command", fake_publish_actuator_command)
+
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/api/v1/farms/farm-001/devices/device-001/led", json={"state": "off"})
+
+    assert response.status_code == 200
+    assert response.json()["published"] is True
+    assert response.json()["command"] == "led"
+    assert response.json()["topic"] == "dalmegg/v1/farms/farm-001/devices/device-001/command"
+    assert published == {
+        "topic_prefix": "dalmegg/v1",
+        "farm_uid": "farm-001",
+        "device_uid": "device-001",
+        "command": "led",
+        "state": "off",
+    }
+
+
+async def test_actuator_command_endpoint_rejects_unknown_command():
+    app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/api/v1/farms/farm-001/devices/device-001/command",
+            json={"command": "fan", "state": "on"},
+        )
+
+    assert response.status_code == 422

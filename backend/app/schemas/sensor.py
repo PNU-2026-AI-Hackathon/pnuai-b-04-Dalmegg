@@ -67,14 +67,26 @@ class SensorLatestRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PumpCommandRequest(BaseModel):
+class ActuatorStateRequest(BaseModel):
     state: Literal["on", "off"]
 
 
-class PumpCommandResponse(BaseModel):
+class ActuatorCommandRequest(ActuatorStateRequest):
+    command: Literal["pump", "led"]
+
+
+class ActuatorCommandResponse(BaseModel):
     farm_uid: str
     device_uid: str
-    command: Literal["pump"] = "pump"
+    command: Literal["pump", "led"]
     state: Literal["on", "off"]
     topic: str
     published: bool
+
+
+class PumpCommandRequest(ActuatorStateRequest):
+    pass
+
+
+class PumpCommandResponse(ActuatorCommandResponse):
+    command: Literal["pump"] = "pump"
