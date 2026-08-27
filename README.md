@@ -402,6 +402,8 @@ flutter test
 
 ## 5. 시연 영상
 
+https://youtu.be/OQ_yT2TUmz8?si=Ju4aZqnTFqD3V2lm
+
 시연은 다음 순서로 구성합니다.
 
 1. 관리자 로그인 후 MiniFarm Dashboard와 센서 이력 확인
