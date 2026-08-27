@@ -1,0 +1,507 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../../models/collection_record.dart';
+import '../../models/program.dart';
+import '../../providers/app_state.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/app_illustration.dart';
+import '../../widgets/contribution_card.dart';
+
+class MyScreen extends StatelessWidget {
+  const MyScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<EggBloomState>();
+
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryGreen,
+                    Color(0xFF7DB87F),
+                    Color(0xFFA8D5AA),
+                  ],
+                ),
+                borderRadius: BorderRadius.vertical(
+                  bottom: Radius.circular(28),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
+              child: Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Center(
+                      child: AppIllustration(
+                        type: IllustrationType.sprout,
+                        size: 50,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          state.userName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          '리워드 ${state.rewardPoints}P',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        _LevelBadge(totalGrams: state.totalGrams),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                ContributionCard(
+                  currentGrams: state.totalGrams.toDouble(),
+                  goalGrams: EggBloomState.rewardGoalGrams.toDouble(),
+                ),
+                const SizedBox(height: 8),
+                if (state.rewardReady)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.lightGreen,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      '꽃 리워드를 받을 수 있어요!',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.primaryGreen,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    _StatBox(
+                      illustration: IllustrationType.recycle,
+                      value: '${state.contributionCount}회',
+                      label: '승인 수거',
+                    ),
+                    const SizedBox(width: 8),
+                    _StatBox(
+                      illustration: IllustrationType.egg,
+                      value: '${state.totalGrams}g',
+                      label: '누적 기여',
+                    ),
+                    const SizedBox(width: 8),
+                    _StatBox(
+                      illustration: IllustrationType.calendar,
+                      value: '${state.reservations.length}건',
+                      label: '예약 체험',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (state.pendingContributionCount > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.pinkSurface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '승인 대기 수거 신청 ${state.pendingContributionCount}건',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.warmBlack,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                const Text(
+                  '수거 참여 내역',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                const SizedBox(height: 10),
+                _HistoryCard(state: state),
+                const SizedBox(height: 20),
+                const Text(
+                  '체험 예약 내역',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                const SizedBox(height: 10),
+                _BookingCard(state: state),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '꽃 주문 내역',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/orders'),
+                      child: const Text('전체보기'),
+                    ),
+                  ],
+                ),
+                _OrderPreviewCard(state: state),
+                const SizedBox(height: 24),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrderPreviewCard extends StatelessWidget {
+  const _OrderPreviewCard({required this.state});
+
+  final EggBloomState state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.orders.isEmpty) {
+      return Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => context.push('/orders'),
+          child: const Padding(
+            padding: EdgeInsets.all(18),
+            child: Text(
+              '아직 주문한 꽃이 없습니다.',
+              style: TextStyle(fontSize: 12, color: AppTheme.mutedText),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final latest = state.orders.first;
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => context.push('/orders'),
+        child: ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.pinkSurface,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: const Center(
+              child: AppIllustration(
+                type: IllustrationType.flowerShop,
+                size: 32,
+              ),
+            ),
+          ),
+          title: Text(
+            '최근 주문 #${latest.id} · ${latest.statusLabel}',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+          subtitle: Text(
+            '${latest.formattedDate} · 총 ${state.orders.length}건',
+            style: const TextStyle(fontSize: 11),
+          ),
+          trailing: Text(
+            latest.formattedTotalAmount,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: AppTheme.primaryGreen,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _cancelReservation(
+  BuildContext context,
+  Program reservation,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('체험 예약 취소'),
+      content: Text('${reservation.title} 예약을 취소할까요?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('돌아가기'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('예약 취소'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  try {
+    await context.read<EggBloomState>().cancelReservation(reservation);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('예약이 취소되었습니다')));
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('예약 취소에 실패했습니다. 잠시 후 다시 시도해주세요.')),
+    );
+  }
+}
+
+class _HistoryCard extends StatelessWidget {
+  const _HistoryCard({required this.state});
+
+  final EggBloomState state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.collectionRecords.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(18),
+          child: Text(
+            '아직 수거 참여 내역이 없습니다.',
+            style: TextStyle(fontSize: 12, color: AppTheme.mutedText),
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Column(
+        children: state.collectionRecords.map((record) {
+          return ListTile(
+            leading: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppTheme.lightGreen,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: AppIllustration(type: IllustrationType.egg, size: 28),
+              ),
+            ),
+            title: Text(
+              record.location,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              '${record.date} · ${record.status.label}',
+              style: const TextStyle(fontSize: 11),
+            ),
+            trailing: Text(
+              '+${record.grams}g',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: record.status == CollectionStatus.rejected
+                    ? AppTheme.mutedText
+                    : AppTheme.primaryGreen,
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _BookingCard extends StatelessWidget {
+  const _BookingCard({required this.state});
+
+  final EggBloomState state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.reservations.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(18),
+          child: Text(
+            '아직 예약한 체험이 없습니다.',
+            style: TextStyle(fontSize: 12, color: AppTheme.mutedText),
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Column(
+        children: state.reservations.map((program) {
+          return ListTile(
+            leading: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFDE7),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Center(
+                child: AppIllustration(
+                  type: IllustrationType.flowerClass,
+                  size: 28,
+                ),
+              ),
+            ),
+            title: Text(
+              program.title,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              '${program.date} · ${program.location}',
+              style: const TextStyle(fontSize: 11),
+            ),
+            trailing: _ReservationAction(program: program),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _ReservationAction extends StatelessWidget {
+  const _ReservationAction({required this.program});
+
+  final Program program;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<EggBloomState>();
+    final reservationId = program.reservationId;
+    final isCancelling =
+        reservationId != null && state.isCancellingReservation(reservationId);
+
+    if (program.canCancelReservation) {
+      return TextButton(
+        onPressed: isCancelling
+            ? null
+            : () => _cancelReservation(context, program),
+        child: Text(isCancelling ? '취소 중' : '예약 취소'),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: program.reservationStatus == 'cancelled'
+            ? AppTheme.warmMuted
+            : AppTheme.lightGreen,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        program.reservationStatusLabel,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: program.reservationStatus == 'cancelled'
+              ? AppTheme.mutedText
+              : AppTheme.primaryGreen,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  const _StatBox({
+    required this.illustration,
+    required this.value,
+    required this.label,
+  });
+
+  final IllustrationType illustration;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Column(
+            children: [
+              AppIllustration(type: illustration, size: 28),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.warmBlack,
+                ),
+              ),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 10, color: AppTheme.mutedText),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LevelBadge extends StatelessWidget {
+  const _LevelBadge({required this.totalGrams});
+
+  final int totalGrams;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        '${totalGrams.toString()}g 기여',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
