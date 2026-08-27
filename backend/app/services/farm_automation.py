@@ -116,9 +116,9 @@ async def evaluate_light_automation(
     target = latest_model.recommended_light_lux
     next_state = None
     reason = ""
-    if latest.light_lux < target - setting.light_tolerance_lux:
+    if latest.light_lux < target:
         next_state = "on"
-        reason = "light_lux_below_recommended_range"
+        reason = "light_lux_below_recommended_value"
     elif latest.light_lux >= target:
         next_state = "off"
         reason = "light_lux_reached_recommended_value"

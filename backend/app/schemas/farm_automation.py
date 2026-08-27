@@ -9,7 +9,6 @@ from app.schemas.sensor import SensorLatestRead
 
 class FarmAutomationSettingUpdate(BaseModel):
     enabled: bool | None = None
-    light_tolerance_lux: float | None = Field(default=None, ge=0, le=10000)
     pump_run_seconds: int | None = Field(default=None, ge=0, le=60)
     pump_check_delay_seconds: int | None = Field(default=None, ge=0, le=300)
     min_water_level_pct: float | None = Field(default=None, ge=0, le=100)
@@ -18,7 +17,6 @@ class FarmAutomationSettingUpdate(BaseModel):
 class FarmAutomationSettingRead(BaseModel):
     id: int
     enabled: bool
-    light_tolerance_lux: float
     pump_run_seconds: int
     pump_check_delay_seconds: int
     min_water_level_pct: float

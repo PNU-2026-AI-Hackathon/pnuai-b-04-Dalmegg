@@ -147,6 +147,82 @@ async def test_pump_control_loop_runs_pulse_until_soil_reaches_target(tmp_path, 
     await engine.dispose()
 
 
+async def test_light_automation_turns_led_on_when_light_is_below_recommended_value(tmp_path, monkeypatch):
+    engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'farm-automation-light.db'}", future=True)
+    TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    published = []
+
+    async def fake_publish_actuator_command(
+        settings,
+        *,
+        farm_uid: str,
+        device_uid: str,
+        command: str,
+        state: str,
+    ) -> None:
+        published.append((farm_uid, device_uid, command, state))
+
+    monkeypatch.setattr(farm_automation, "publish_actuator_command", fake_publish_actuator_command)
+
+    async with TestingSessionLocal() as db:
+        await handle_telemetry_message(
+            db,
+            topic="dalmegg/v1/farms/farm-001/devices/device-001/telemetry",
+            payload='{"message_id":"light-001","light_lux":11999}',
+        )
+        device = (
+            await db.execute(
+                select(SmartFarmDevice).where(
+                    SmartFarmDevice.farm_uid == "farm-001",
+                    SmartFarmDevice.device_uid == "device-001",
+                )
+            )
+        ).scalar_one()
+        db.add(SmartFarmAutomationSetting(device_id=device.id, enabled=True))
+        db.add(
+            AiModelTrainingRun(
+                run_number=1,
+                sample_count=10,
+                mock_sample_count=10,
+                camera_sample_count=0,
+                model_type="RandomForestRegressor",
+                r2_score=0.9,
+                mae=0.01,
+                recommended_temperature_c=24,
+                recommended_humidity_pct=60,
+                recommended_soil_moisture_pct=50,
+                recommended_light_lux=12000,
+                predicted_growth_rate=0.1,
+                feature_importance_json={},
+                summary="test",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        await db.commit()
+
+        actions = await farm_automation.evaluate_light_automation(
+            db,
+            farm_uid="farm-001",
+            device_uid="device-001",
+        )
+
+    assert actions == [
+        {
+            "command": "led",
+            "state": "on",
+            "reason": "light_lux_below_recommended_value",
+            "published": True,
+        }
+    ]
+    assert published == [("farm-001", "device-001", "led", "on")]
+
+    await engine.dispose()
+
+
 async def test_pump_control_loop_does_not_run_when_water_level_is_low(tmp_path, monkeypatch):
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'farm-automation-water.db'}", future=True)
     TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)

@@ -12,7 +12,6 @@ class SmartFarmAutomationSetting(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     device_id: Mapped[int] = mapped_column(ForeignKey("smart_farm_device.id"), unique=True, nullable=False, index=True)
     enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    light_tolerance_lux: Mapped[float] = mapped_column(Float, default=1000.0, nullable=False)
     pump_run_seconds: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
     pump_check_delay_seconds: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
     min_water_level_pct: Mapped[float] = mapped_column(Float, default=10.0, nullable=False)
