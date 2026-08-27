@@ -29,9 +29,13 @@ function getSensorStatus(value: number, min: number, max: number): SensorData['s
   return 'normal'
 }
 
+function parseSensorTimestamp(value: string) {
+  return new Date(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(value) ? value : `${value}Z`)
+}
+
 function formatSensorTime(value?: string, currentTimeMs = 0) {
   if (!value) return '수신 시각 없음'
-  const date = new Date(value)
+  const date = parseSensorTimestamp(value)
   if (Number.isNaN(date.getTime())) return value
   const minutes = Math.max(0, Math.round((currentTimeMs - date.getTime()) / 60000))
   if (minutes < 1) return '방금 전'
@@ -126,7 +130,7 @@ export function DashboardPage() {
   const pendingReservations = reservationItems.filter((item) => item.status === 'reserved').length
   const lowStockItems = dashboardFlowerInventory.filter((item) => item.stock_quantity > 0 && item.stock_quantity <= 5).length
   const sensorIssue = sensorItems.find((sensor) => sensor.status !== 'normal')
-  const isSensorStale = sensorUpdatedAt ? currentTimeMs - new Date(sensorUpdatedAt).getTime() > 10 * 60 * 1000 : false
+  const isSensorStale = sensorUpdatedAt ? currentTimeMs - parseSensorTimestamp(sensorUpdatedAt).getTime() > 10 * 60 * 1000 : false
   const sensorTrustText = sensorSource === 'live' && !isSensorStale ? `실시간 수신 · ${formatSensorTime(sensorUpdatedAt ?? undefined, currentTimeMs)}` : sensorSource === 'live' ? '수신 지연 · 데이터 확인 필요' : '연결 확인 필요 · 예시값 표시 중'
   const sortedInventory = useMemo(() => [...dashboardFlowerInventory].sort((a, b) => a.stock_quantity - b.stock_quantity), [dashboardFlowerInventory])
 
