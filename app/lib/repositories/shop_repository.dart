@@ -52,7 +52,7 @@ class ApiShopRepository implements ShopRepository {
 
   @override
   Future<List<Shop>> fetchShops() async {
-    final list = await apiClient.getList('/api/shops?region=부산');
+    final list = await apiClient.getList('/api/shops');
     return list.whereType<Map<String, dynamic>>().map(Shop.fromJson).toList();
   }
 }

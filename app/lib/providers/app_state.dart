@@ -91,45 +91,66 @@ class EggBloomState extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
 
-    try {
-      final results = await Future.wait([
-        _userRepository.fetchMe(),
-        _collectionRepository.fetchMyCollections(),
-        _flowerRepository.fetchFlowers(),
-        _programRepository.fetchPrograms(),
-        _reservationRepository.fetchMyReservations(),
-        _shopRepository.fetchShops(),
-      ]);
+    final failedLoads = <String>[];
 
-      final user = results[0] as UserSummary;
-      userName = user.fullName;
-      totalGrams = user.accumulatedEggshellGrams;
-      savedCo2Kg = user.savedCo2Kg;
-      rewardPoints = user.rewardPoints;
-      contributionCount = user.contributionCount;
-      pendingContributionCount = user.pendingContributionCount;
-
-      collectionRecords
-        ..clear()
-        ..addAll(results[1] as List<CollectionRecord>);
-      flowers
-        ..clear()
-        ..addAll(results[2] as List<Flower>);
-      programs
-        ..clear()
-        ..addAll(results[3] as List<Program>);
-      reservations
-        ..clear()
-        ..addAll(results[4] as List<Program>);
-      shops
-        ..clear()
-        ..addAll(results[5] as List<Shop>);
-    } catch (_) {
-      errorMessage = '데이터를 불러오지 못했습니다.';
-    } finally {
-      isLoading = false;
-      notifyListeners();
+    Future<void> load(String label, Future<void> Function() request) async {
+      try {
+        await request();
+      } catch (error, stackTrace) {
+        failedLoads.add(label);
+        debugPrint('$label 로딩 실패: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
+
+    await Future.wait([
+      load('사용자 정보', () async {
+        final user = await _userRepository.fetchMe();
+        userName = user.fullName;
+        totalGrams = user.accumulatedEggshellGrams;
+        savedCo2Kg = user.savedCo2Kg;
+        rewardPoints = user.rewardPoints;
+        contributionCount = user.contributionCount;
+        pendingContributionCount = user.pendingContributionCount;
+      }),
+      load('수거 내역', () async {
+        final records = await _collectionRepository.fetchMyCollections();
+        collectionRecords
+          ..clear()
+          ..addAll(records);
+      }),
+      load('꽃 상품', () async {
+        final loadedFlowers = await _flowerRepository.fetchFlowers();
+        flowers
+          ..clear()
+          ..addAll(loadedFlowers);
+      }),
+      load('체험 프로그램', () async {
+        final loadedPrograms = await _programRepository.fetchPrograms();
+        programs
+          ..clear()
+          ..addAll(loadedPrograms);
+      }),
+      load('예약 내역', () async {
+        final loadedReservations = await _reservationRepository
+            .fetchMyReservations();
+        reservations
+          ..clear()
+          ..addAll(loadedReservations);
+      }),
+      load('꽃집', () async {
+        final loadedShops = await _shopRepository.fetchShops();
+        shops
+          ..clear()
+          ..addAll(loadedShops);
+      }),
+    ]);
+
+    if (failedLoads.isNotEmpty) {
+      errorMessage = '일부 데이터를 불러오지 못했습니다: ${failedLoads.join(', ')}';
+    }
+    isLoading = false;
+    notifyListeners();
   }
 
   Future<void> addCollection({

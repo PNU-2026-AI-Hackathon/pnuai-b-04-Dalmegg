@@ -27,7 +27,7 @@ class UserSummary {
     return UserSummary(
       id: json['id'] as int,
       email: json['email'] as String,
-      fullName: json['full_name'] as String,
+      fullName: json['full_name'] as String? ?? '사용자',
       accumulatedEggshellKg: (json['accumulated_eggshell_kg'] as num)
           .toDouble(),
       savedCo2Kg: (json['saved_co2_kg'] as num).toDouble(),
