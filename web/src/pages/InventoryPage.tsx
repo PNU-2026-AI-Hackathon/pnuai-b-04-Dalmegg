@@ -28,7 +28,7 @@ const statusStyle: Record<InventoryStatus, { label: string; className: string }>
 
 function getStatus(stockQuantity: number): InventoryStatus {
   if (stockQuantity === 0) return 'soldout'
-  if (stockQuantity < 100) return 'low'
+  if (stockQuantity <= 5) return 'low'
   return 'sufficient'
 }
 
@@ -223,7 +223,7 @@ function FlowerForm({ initial, defaultShopId, onSubmit, onClose }: FlowerFormPro
           </label>
 
           <p className="rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-            저장한 꽃은 내 운영 공간의 판매 목록에 등록됩니다. 100주 이상은 재고충분, 1-99주는 재고부족, 0주는 품절입니다.
+            저장한 꽃은 내 운영 공간의 판매 목록에 등록됩니다. 6주 이상은 재고충분, 1-5주는 재고부족, 0주는 품절입니다.
           </p>
         </div>
       </div>
@@ -237,6 +237,7 @@ function FlowerForm({ initial, defaultShopId, onSubmit, onClose }: FlowerFormPro
 
 export function InventoryPage() {
   const operator = useAuthStore((state) => state.operator)
+  const shouldUseLocalInventory = USE_MOCKS
   const [items, setItems] = useState<FlowerInventoryItem[]>(readStoredInventory)
   const [query, setQuery] = useState('')
   const [viewMode, setViewMode] = useState<InventoryViewMode>('list')
@@ -252,6 +253,11 @@ export function InventoryPage() {
       [item.name, item.description, item.color].some((value) => value.toLowerCase().includes(keyword)),
     )
   }, [items, query])
+  const prioritizedItems = useMemo(
+    () => [...filteredItems].sort((a, b) => a.stock_quantity - b.stock_quantity || a.name.localeCompare(b.name, 'ko')),
+    [filteredItems],
+  )
+  const attentionItems = items.filter((item) => getStatus(item.stock_quantity) !== 'sufficient')
 
   useEffect(() => {
     let ignore = false
@@ -307,7 +313,7 @@ export function InventoryPage() {
   const addFlower = async (data: FlowerFormData) => {
     const shopId = operator?.shop_id || data.shop_id || 1
 
-    if (USE_MOCKS) {
+    if (shouldUseLocalInventory) {
       const localFlower = createLocalFlower(data, shopId)
       setItems((current) => [localFlower, ...current])
       closeModal()
@@ -336,7 +342,7 @@ export function InventoryPage() {
   const updateFlower = async (data: FlowerFormData) => {
     if (!editingItem) return
 
-    if (USE_MOCKS) {
+    if (shouldUseLocalInventory) {
       const localFlower = updateLocalFlower(editingItem, data)
       setItems((current) => current.map((item) => item.id === editingItem.id ? localFlower : item))
       closeModal()
@@ -362,7 +368,7 @@ export function InventoryPage() {
   const deleteFlower = async () => {
     if (!deleteTarget) return
 
-    if (USE_MOCKS) {
+    if (shouldUseLocalInventory) {
       setItems((current) => current.filter((item) => item.id !== deleteTarget.id))
       closeDeleteModal()
       return
@@ -387,7 +393,7 @@ export function InventoryPage() {
     <div className="mx-auto max-w-[1500px]">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-bold text-emerald-600">FLOWER INVENTORY</p>
+          <p className="text-sm font-bold text-rose-600">FLOWER INVENTORY</p>
           <h1 className="page-title">꽃 재고 관리</h1>
           <p className="page-description">판매 가능한 꽃의 이미지, 색상, 설명, 수량, 가격을 관리하세요.</p>
         </div>
@@ -397,17 +403,23 @@ export function InventoryPage() {
       </div>
 
       <section className="dashboard-card mt-7 p-5">
+        {attentionItems.length > 0 && (
+          <div className="mb-5 flex flex-col gap-3 border-l-2 border-amber-500 bg-amber-50/60 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-baseline gap-3"><p className="text-base font-semibold tracking-[-.025em] text-[#42351f]">재고 확인 필요</p><span className="text-lg font-semibold tracking-[-.04em] text-amber-800">{attentionItems.length}개 품목</span></div>
+            <p className="text-xs leading-5 text-slate-600">재고가 적은 품목부터 목록 상단에 표시합니다.</p>
+          </div>
+        )}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <label className="relative block w-full max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} className="form-input pl-10" placeholder="꽃 이름, 설명, 색상 검색" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} className="form-input !pl-16" placeholder="꽃 이름, 설명, 색상 검색" />
           </label>
           <div className="inline-flex w-fit rounded-xl border border-slate-200 bg-slate-50 p-1">
             <button
               type="button"
               onClick={() => setViewMode('list')}
               className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-extrabold transition ${
-                viewMode === 'list' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                viewMode === 'list' ? 'bg-white text-rose-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <List size={15} /> 리스트
@@ -416,7 +428,7 @@ export function InventoryPage() {
               type="button"
               onClick={() => setViewMode('grid')}
               className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-extrabold transition ${
-                viewMode === 'grid' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                viewMode === 'grid' ? 'bg-white text-rose-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <LayoutGrid size={15} /> 피드형
@@ -431,7 +443,7 @@ export function InventoryPage() {
             <table className="data-table min-w-[1080px]">
               <thead><tr><th>판매 이미지</th><th>꽃 이름</th><th>색상</th><th>설명</th><th>재고수량</th><th>가격</th><th>상태</th><th className="text-right">관리</th></tr></thead>
               <tbody>
-                {filteredItems.map((item) => {
+                {prioritizedItems.map((item) => {
                   const status = statusStyle[getStatus(item.stock_quantity)]
                   return (
                     <tr key={item.id}>
@@ -448,7 +460,7 @@ export function InventoryPage() {
                       <td><span className={`status-badge ${status.className}`}>{status.label}</span></td>
                       <td className="text-right">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
+                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-rose-300 hover:text-rose-700">
                             <Pencil size={13} /> 수정
                           </button>
                           <button onClick={() => openDelete(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 px-3 py-2 text-xs font-bold text-rose-600 hover:border-rose-300 hover:bg-rose-50">
@@ -461,20 +473,20 @@ export function InventoryPage() {
                 })}
               </tbody>
             </table>
-            {filteredItems.length === 0 && <p className="p-12 text-center text-sm text-slate-400">검색 결과가 없습니다.</p>}
+            {prioritizedItems.length === 0 && <p className="p-12 text-center text-sm text-slate-400">검색 결과가 없습니다.</p>}
           </div>
         </section>
       ) : (
         <section className="mt-5">
-          {filteredItems.length === 0 ? (
+          {prioritizedItems.length === 0 ? (
             <div className="dashboard-card p-12 text-center text-sm text-slate-400">검색 결과가 없습니다.</div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2">
-              {filteredItems.map((item) => {
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {prioritizedItems.map((item) => {
                 const status = statusStyle[getStatus(item.stock_quantity)]
                 return (
                   <article key={item.id} className="dashboard-card overflow-hidden">
-                    <div className="aspect-square bg-slate-50">
+                    <div className="aspect-[4/3] bg-slate-50">
                       <FlowerImagePreview item={item} />
                     </div>
                     <div className="p-4">
@@ -485,11 +497,11 @@ export function InventoryPage() {
                         </div>
                         <span className={`status-badge shrink-0 ${status.className}`}>{status.label}</span>
                       </div>
-                      <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">{item.description || '설명이 없습니다.'}</p>
-                      <div className="mt-4 flex items-center justify-between gap-3">
-                        <p className="text-sm font-bold text-slate-600">재고 <span className="text-emerald-700">{item.stock_quantity.toLocaleString()}주</span></p>
+                      <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{item.description || '설명이 없습니다.'}</p>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <p className="text-sm font-bold text-slate-600">재고 <span className={item.stock_quantity === 0 ? 'text-rose-700' : item.stock_quantity <= 5 ? 'text-amber-700' : 'text-emerald-700'}>{item.stock_quantity.toLocaleString()}주</span></p>
                         <div className="flex shrink-0 items-center gap-2">
-                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-emerald-300 hover:text-emerald-700">
+                          <button onClick={() => openEdit(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-rose-300 hover:text-rose-700">
                             <Pencil size={13} /> 수정
                           </button>
                           <button onClick={() => openDelete(item)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-100 px-3 py-2 text-xs font-bold text-rose-600 hover:border-rose-300 hover:bg-rose-50">

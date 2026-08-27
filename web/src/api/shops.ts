@@ -1,5 +1,5 @@
 import { apiRequest } from './client'
-import type { ShopCreate, ShopRead } from './types'
+import type { ShopCreate, ShopRead, ShopUpdate } from './types'
 
 export function listShops(region?: string) {
   const searchParams = new URLSearchParams()
@@ -15,6 +15,13 @@ export function listShops(region?: string) {
 export function createShop(input: ShopCreate) {
   return apiRequest<ShopRead>('/api/shops', {
     method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateShop(shopId: number, input: ShopUpdate) {
+  return apiRequest<ShopRead>(`/api/shops/${shopId}`, {
+    method: 'PATCH',
     body: JSON.stringify(input),
   })
 }

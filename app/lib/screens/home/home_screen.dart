@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../main.dart';
 import '../../models/flower.dart';
 import '../../models/program.dart';
+import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/app_illustration.dart';
 import '../../widgets/contribution_card.dart';
 import '../../widgets/grade_card.dart';
 import '../../widgets/section_header.dart';
@@ -57,17 +58,16 @@ class HomeScreen extends StatelessWidget {
                           color: Colors.white24,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
-                          Icons.local_florist,
-                          size: 18,
-                          color: Colors.white,
+                        child: const AppIllustration(
+                          type: IllustrationType.sprout,
+                          size: 28,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 14),
                   const Text(
-                    '오늘도 자원순환에\n참여해볼까요? 🌱',
+                    '오늘도 자원순환에\n참여해볼까요?',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -97,25 +97,50 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 SectionHeader(title: '추천 꽃 상품', onMore: () {}),
                 const SizedBox(height: 10),
-                SizedBox(
-                  height: 180,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: state.flowers.take(3).length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 10),
-                    itemBuilder: (context, index) =>
-                        _MiniFlowerCard(flower: state.flowers[index]),
+                if (state.flowers.isEmpty)
+                  const _LoadingCard(label: '추천 꽃 상품을 불러오는 중입니다.')
+                else
+                  SizedBox(
+                    height: 180,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: state.flowers.take(3).length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 10),
+                      itemBuilder: (context, index) =>
+                          _MiniFlowerCard(flower: state.flowers[index]),
+                    ),
                   ),
-                ),
                 const SizedBox(height: 20),
                 SectionHeader(title: '추천 꽃꾸 체험', onMore: () {}),
                 const SizedBox(height: 10),
-                _FeaturedProgramCard(program: state.programs.first),
+                if (state.programs.isEmpty)
+                  const _LoadingCard(label: '추천 체험을 불러오는 중입니다.')
+                else
+                  _FeaturedProgramCard(program: state.programs.first),
                 const SizedBox(height: 16),
               ]),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: AppTheme.mutedText),
+        ),
       ),
     );
   }
@@ -148,7 +173,10 @@ class _MiniFlowerCard extends StatelessWidget {
                 top: Radius.circular(16),
               ),
             ),
-            child: Text(flower.emoji, style: const TextStyle(fontSize: 42)),
+            child: AppIllustration(
+              type: illustrationForFlower(flower.name, flower.emoji),
+              size: 70,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(10),
@@ -205,9 +233,9 @@ class _FeaturedProgramCard extends StatelessWidget {
               color: AppTheme.lightGreen,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
-              Icons.palette_outlined,
-              color: AppTheme.primaryGreen,
+            child: const AppIllustration(
+              type: IllustrationType.flowerClass,
+              size: 48,
             ),
           ),
           const SizedBox(width: 12),

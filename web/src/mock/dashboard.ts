@@ -1,6 +1,5 @@
 import {
   Droplets,
-  Egg,
   Leaf,
   Recycle,
 } from 'lucide-react'
@@ -12,22 +11,20 @@ import type {
   WeeklyEnvironment,
   SensorData,
   SensorHistory,
-  CollectionData,
   FlowerInventory,
   AdminAlert,
   FlowerInventoryItem,
   Reservation,
-  CollectionRanking,
 } from '../types/dashboard'
 
 export const metrics: MetricCardData[] = [
   {
-    label: '오늘 수거한 계란껍질',
+    label: '오늘의 순환 활동량',
     value: '128.4',
     unit: 'kg',
     change: '12.5%',
     trend: 'up',
-    icon: Egg,
+    icon: Recycle,
     tone: 'amber',
   },
   {
@@ -82,7 +79,7 @@ export const cropProgress: CropProgress[] = [
 ]
 
 export const circularActivities: CircularActivity[] = [
-  { id: 1, title: '계란껍질 수거 완료', description: '부산대학교 학생회관 · 36.8kg', time: '10분 전', type: 'collect' },
+  { id: 1, title: '지역 자원 수거 완료', description: '부산대학교 학생회관 · 36.8kg', time: '10분 전', type: 'collect' },
   { id: 2, title: '칼슘 영양제 생산', description: '금정 순환센터 · 18.2kg', time: '1시간 전', type: 'process' },
   { id: 3, title: 'A동 영양액 공급', description: '튤립 재배존 · 24L', time: '2시간 전', type: 'supply' },
 ]
@@ -104,16 +101,6 @@ export const sensorHistory: SensorHistory[] = Array.from({ length: 13 }, (_, ind
     soil: Math.round(58 - index * 1.25 + Math.sin(index) * 2),
   }
 })
-
-export const collectionStats: CollectionData[] = [
-  { period: '2026-06-14', weight_kg: 82, collection_count: 18 },
-  { period: '2026-06-15', weight_kg: 96, collection_count: 22 },
-  { period: '2026-06-16', weight_kg: 78, collection_count: 17 },
-  { period: '2026-06-17', weight_kg: 114, collection_count: 26 },
-  { period: '2026-06-18', weight_kg: 108, collection_count: 24 },
-  { period: '2026-06-19', weight_kg: 126, collection_count: 29 },
-  { period: '2026-06-20', weight_kg: 142, collection_count: 32 },
-]
 
 export const flowerInventory: FlowerInventory[] = [
   { name: '장미', stock_quantity: 320 },
@@ -140,30 +127,8 @@ export const flowerInventoryItems: FlowerInventoryItem[] = [
 export const reservations: Reservation[] = [
   { id: 1001, user_id: 11, program_id: 1, participant_count: 2, total_amount: 60000, status: 'confirmed', created_at: '2026-07-06T12:00:00', user_email: 'minji@example.com', user_full_name: '김민지', program_title: '나만의 꽃다발 만들기', shop_id: 1 },
   { id: 1002, user_id: 12, program_id: 2, participant_count: 4, total_amount: 40000, status: 'reserved', created_at: '2026-07-06T13:20:00', user_email: 'seojun@example.com', user_full_name: '이서준', program_title: '스마트팜 견학', shop_id: 1 },
-  { id: 1003, user_id: 13, program_id: 3, participant_count: 3, total_amount: 45000, status: 'completed', created_at: '2026-07-05T15:30:00', user_email: 'jiwoo@example.com', user_full_name: '박지우', program_title: '계란껍질 화분 체험', shop_id: 1 },
+  { id: 1003, user_id: 13, program_id: 3, participant_count: 3, total_amount: 45000, status: 'completed', created_at: '2026-07-05T15:30:00', user_email: 'jiwoo@example.com', user_full_name: '박지우', program_title: '순환 화분 체험', shop_id: 1 },
   { id: 1004, user_id: 14, program_id: 4, participant_count: 1, total_amount: 30000, status: 'cancelled', created_at: '2026-07-04T10:00:00', user_email: 'hayoon@example.com', user_full_name: '최하윤', program_title: '플라워팜 하루 클래스', shop_id: 1 },
   { id: 1005, user_id: 15, program_id: 2, participant_count: 5, total_amount: 50000, status: 'reserved', created_at: '2026-07-03T13:00:00', user_email: 'doyoon@example.com', user_full_name: '정도윤', program_title: '스마트팜 견학', shop_id: 1 },
   { id: 1006, user_id: 16, program_id: 1, participant_count: 2, total_amount: 60000, status: 'no_show', created_at: '2026-07-02T16:00:00', user_email: 'yerin@example.com', user_full_name: '한예린', program_title: '나만의 꽃다발 만들기', shop_id: 1 },
-]
-
-export const collectionRanking: CollectionRanking[] = [
-  { rank: 1, user_id: 1, email: 'minjun@example.com', full_name: '김민준', total_weight_kg: 286.4, reward_points: 28640, contribution_count: 48 },
-  { rank: 2, user_id: 2, email: 'seoyeon@example.com', full_name: '박서연', total_weight_kg: 254.8, reward_points: 25480, contribution_count: 43 },
-  { rank: 3, user_id: 3, email: 'dohyun@example.com', full_name: '이도현', total_weight_kg: 231.2, reward_points: 23120, contribution_count: 41 },
-  { rank: 4, user_id: 4, email: 'jia@example.com', full_name: '최지아', total_weight_kg: 198.7, reward_points: 19870, contribution_count: 36 },
-  { rank: 5, user_id: 5, email: 'woojin@example.com', full_name: '정우진', total_weight_kg: 176.5, reward_points: 17650, contribution_count: 31 },
-  { rank: 6, user_id: 6, email: 'haeun@example.com', full_name: '윤하은', total_weight_kg: 164.1, reward_points: 16410, contribution_count: 30 },
-  { rank: 7, user_id: 7, email: 'siwoo@example.com', full_name: '강시우', total_weight_kg: 151.8, reward_points: 15180, contribution_count: 28 },
-  { rank: 8, user_id: 8, email: 'yuna@example.com', full_name: '한유나', total_weight_kg: 143.2, reward_points: 14320, contribution_count: 26 },
-  { rank: 9, user_id: 9, email: 'jiho@example.com', full_name: '송지호', total_weight_kg: 129.6, reward_points: 12960, contribution_count: 21 },
-  { rank: 10, user_id: 10, email: 'chaewon@example.com', full_name: '오채원', total_weight_kg: 118.3, reward_points: 11830, contribution_count: 18 },
-]
-
-export const monthlyCollectionTrend: CollectionData[] = [
-  { period: '2026-01', weight_kg: 412, collection_count: 82 },
-  { period: '2026-02', weight_kg: 528, collection_count: 105 },
-  { period: '2026-03', weight_kg: 684, collection_count: 136 },
-  { period: '2026-04', weight_kg: 742, collection_count: 148 },
-  { period: '2026-05', weight_kg: 896, collection_count: 174 },
-  { period: '2026-06', weight_kg: 1042, collection_count: 210 },
 ]

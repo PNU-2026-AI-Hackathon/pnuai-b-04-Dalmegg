@@ -38,23 +38,11 @@ const ReservationsPage = lazy(() =>
   })),
 )
 
-const CollectionsPage = lazy(() =>
-  import('../pages/CollectionsPage').then((module) => ({
-    default: module.CollectionsPage,
-  })),
-)
-
-const SimulatorPage = lazy(() =>
-  import('../pages/SimulatorPage').then((module) => ({
-    default: module.SimulatorPage,
-  })),
-)
-
 function RouteLoader() {
   return (
     <div className="grid min-h-[60vh] place-items-center">
       <div
-        className="size-8 animate-spin rounded-full border-4 border-emerald-100 border-t-emerald-600"
+        className="size-8 animate-spin rounded-full border-4 border-rose-100 border-t-rose-600"
         aria-label="페이지 불러오는 중"
       />
     </div>
@@ -93,10 +81,6 @@ const router = createBrowserRouter([
         element: <SignupPage />,
       },
       {
-        path: ROUTES.simulator,
-        element: lazyPage(<SimulatorPage />),
-      },
-      {
         path: ROUTES.notFound,
         element: <NotFoundPage />,
       },
@@ -124,10 +108,6 @@ const router = createBrowserRouter([
       {
         path: ROUTES.reservations,
         element: lazyPage(<ReservationsPage />),
-      },
-      {
-        path: ROUTES.eggShell,
-        element: lazyPage(<CollectionsPage />),
       },
     ],
   },

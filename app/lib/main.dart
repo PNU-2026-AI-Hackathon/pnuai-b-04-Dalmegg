@@ -1,176 +1,259 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'models/collection_record.dart';
-import 'models/flower.dart';
-import 'models/program.dart';
+import 'core/api_client.dart';
+import 'core/token_storage.dart';
+import 'features/market/market_detail_screen.dart';
+import 'features/market/market_list_screen.dart';
+import 'providers/app_state.dart';
+import 'providers/auth_session.dart';
+import 'repositories/auth_repository.dart';
+import 'repositories/collection_repository.dart';
+import 'repositories/flower_repository.dart';
+import 'repositories/order_repository.dart';
+import 'repositories/program_repository.dart';
+import 'repositories/reservation_repository.dart';
+import 'repositories/shop_repository.dart';
+import 'repositories/user_repository.dart';
 import 'screens/collect/collect_screen.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/auth/register_screen.dart';
 import 'screens/experience/experience_screen.dart';
 import 'screens/home/home_screen.dart';
-import 'screens/market/market_screen.dart';
 import 'screens/my/my_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bottom_nav_bar.dart';
 
-void main() => runApp(const EggBloomApp());
+const _demoMode = bool.fromEnvironment('DEMO_MODE', defaultValue: false);
+
+void main() => runApp(const EggBloomApp(useMockRepositories: _demoMode));
 
 class EggBloomApp extends StatelessWidget {
-  const EggBloomApp({super.key});
+  const EggBloomApp({super.key, this.useMockRepositories = false});
+
+  final bool useMockRepositories;
+
+  static const _apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:8000',
+  );
+  static const _accessToken = String.fromEnvironment('ACCESS_TOKEN');
+  static const _refreshToken = String.fromEnvironment('REFRESH_TOKEN');
+
+  static final _router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) {
+          final tab = int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0;
+          return AuthGate(initialIndex: tab);
+        },
+      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/market/:id',
+        builder: (context, state) {
+          final marketId = state.pathParameters['id'] ?? '';
+          return MarketDetailScreen(marketId: marketId);
+        },
+      ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => EggBloomState(),
-      child: MaterialApp(
+    final dependencies = _createApiDependencies();
+
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthSession(
+            authRepository: useMockRepositories
+                ? _MockAuthRepository()
+                : ApiAuthRepository(
+                    apiClient: dependencies.apiClient,
+                    tokenStorage: dependencies.tokenStorage,
+                  ),
+            isAuthenticated: useMockRepositories || _accessToken.isNotEmpty,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => useMockRepositories
+              ? EggBloomState()
+              : _createApiState(dependencies.apiClient),
+        ),
+      ],
+      child: MaterialApp.router(
         title: 'Egg Bloom',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        home: const MainNavigator(),
+        routerConfig: _router,
       ),
+    );
+  }
+
+  _ApiDependencies _createApiDependencies() {
+    final tokenStorage = MemoryTokenStorage(
+      accessToken: _accessToken.isEmpty ? null : _accessToken,
+      refreshToken: _refreshToken.isEmpty ? null : _refreshToken,
+    );
+    final apiClient = ApiClient(
+      baseUrl: Uri.parse(_apiBaseUrl),
+      tokenStorage: tokenStorage,
+    );
+
+    return _ApiDependencies(apiClient: apiClient, tokenStorage: tokenStorage);
+  }
+
+  EggBloomState _createApiState(ApiClient apiClient) {
+    return EggBloomState.withRepositories(
+      userRepository: ApiUserRepository(apiClient: apiClient),
+      collectionRepository: ApiCollectionRepository(apiClient: apiClient),
+      flowerRepository: ApiFlowerRepository(apiClient: apiClient),
+      orderRepository: ApiOrderRepository(apiClient: apiClient),
+      programRepository: ApiProgramRepository(apiClient: apiClient),
+      reservationRepository: ApiReservationRepository(apiClient: apiClient),
+      shopRepository: ApiShopRepository(apiClient: apiClient),
     );
   }
 }
 
+class _ApiDependencies {
+  const _ApiDependencies({required this.apiClient, required this.tokenStorage});
+
+  final ApiClient apiClient;
+  final TokenStorage tokenStorage;
+}
+
+class _MockAuthRepository implements AuthRepository {
+  @override
+  Future<void> register({
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {}
+
+  @override
+  Future<AuthTokens> login({
+    required String email,
+    required String password,
+  }) async {
+    return const AuthTokens(
+      accessToken: 'mock-access-token',
+      refreshToken: 'mock-refresh-token',
+      tokenType: 'bearer',
+    );
+  }
+
+  @override
+  Future<void> logout() async {}
+}
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key, required this.initialIndex});
+
+  final int initialIndex;
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _loadedAfterLogin = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAuthenticated = context.watch<AuthSession>().isAuthenticated;
+    if (!isAuthenticated) {
+      _loadedAfterLogin = false;
+      return const LoginScreen(showBackButton: false);
+    }
+
+    if (!_loadedAfterLogin) {
+      _loadedAfterLogin = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<EggBloomState>().loadInitialData();
+        }
+      });
+    }
+
+    return MainNavigator(initialIndex: widget.initialIndex);
+  }
+}
+
 class MainNavigator extends StatefulWidget {
-  const MainNavigator({super.key});
+  const MainNavigator({super.key, this.initialIndex = 0});
+
+  final int initialIndex;
 
   @override
   State<MainNavigator> createState() => _MainNavigatorState();
 }
 
 class _MainNavigatorState extends State<MainNavigator> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   final List<Widget> _screens = const [
     HomeScreen(),
     CollectScreen(),
-    MarketScreen(),
+    MarketListScreen(),
     ExperienceScreen(),
     MyScreen(),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _currentIndex = _normalizedIndex(widget.initialIndex);
+  }
+
+  @override
+  void didUpdateWidget(covariant MainNavigator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialIndex != oldWidget.initialIndex) {
+      _currentIndex = _normalizedIndex(widget.initialIndex);
+    }
+  }
+
+  int _normalizedIndex(int index) {
+    if (index < 0 || index >= _screens.length) {
+      return 0;
+    }
+    return index;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: Column(
+        children: [
+          if (_demoMode)
+            SafeArea(
+              bottom: false,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                color: const Color(0xFFFFF3CD),
+                child: const Text(
+                  '시연용 데모 데이터',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: Color(0xFF7A5B00)),
+                ),
+              ),
+            ),
+          Expanded(child: _screens[_currentIndex]),
+        ],
+      ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
       ),
     );
-  }
-}
-
-class EggBloomState extends ChangeNotifier {
-  static const int rewardGoalGrams = 500;
-
-  final String userName = '김순환';
-  int totalGrams = 320;
-
-  final List<CollectionRecord> collectionRecords = [
-    const CollectionRecord(date: '07.01', location: '부산대 제휴 수거함', grams: 85),
-    const CollectionRecord(date: '06.27', location: '장전동 제휴 카페', grams: 120),
-    const CollectionRecord(date: '06.22', location: '도화농장 수거함', grams: 115),
-  ];
-
-  final List<Program> reservations = [];
-
-  final List<Flower> flowers = const [
-    Flower(
-      name: '미니 거베라',
-      price: '5,200원',
-      stock: 14,
-      location: '도화농장',
-      description: '선명한 색감의 소형 거베라. 화분에 넣어 선물하기 좋아요.',
-      emoji: '🌸',
-      bgColor: Color(0xFFFCE4EC),
-    ),
-    Flower(
-      name: '봄 튤립',
-      price: '6,800원',
-      stock: 8,
-      location: '도화농장',
-      description: '부드러운 파스텔 핑크. 이번 주 한정 수확분이에요.',
-      emoji: '🌷',
-      bgColor: Color(0xFFFCE4F0),
-    ),
-    Flower(
-      name: '프리미엄 장미',
-      price: '8,500원',
-      stock: 5,
-      location: '부산대 스마트팜',
-      description: 'ESG 친환경 인증 재배. 계란껍질 비료로 키웠어요.',
-      emoji: '🌹',
-      bgColor: Color(0xFFFFEBEE),
-    ),
-    Flower(
-      name: '프리지아',
-      price: '4,500원',
-      stock: 20,
-      location: '부산대 스마트팜',
-      description: '은은한 향이 일품. 봄 내음을 그대로 담았어요.',
-      emoji: '🌼',
-      bgColor: Color(0xFFFFFDE7),
-    ),
-  ];
-
-  final List<Program> programs = const [
-    Program(
-      title: 'ESG 꽃꾸 클래스',
-      date: '2026년 7월 12일 (일) 14:00',
-      location: '부산대 그린스페이스',
-      price: '15,000원',
-      remainingSpots: 3,
-      totalSpots: 12,
-      description: '친환경 꽃꾸미기와 ESG 스마트팜 견학을 함께 경험해요.',
-      tag: '인기',
-      tagColor: Colors.pinkAccent,
-    ),
-    Program(
-      title: '업사이클링 플라워 클래스',
-      date: '2026년 7월 19일 (일) 13:00',
-      location: '장전동 제휴 스튜디오',
-      price: '18,000원',
-      remainingSpots: 6,
-      totalSpots: 10,
-      description: '계란껍질 화분 만들기와 화훼 장식 체험을 진행해요.',
-      tag: 'NEW',
-      tagColor: Colors.green,
-    ),
-    Program(
-      title: '나만의 미니 꽃다발 만들기',
-      date: '2026년 7월 26일 (일) 15:00',
-      location: '도화농장 체험동',
-      price: '12,000원',
-      remainingSpots: 8,
-      totalSpots: 15,
-      description: '직접 수확한 꽃으로 나만의 꽃다발을 완성해요.',
-      tag: '추천',
-      tagColor: Colors.amber,
-    ),
-  ];
-
-  int get remainingGrams {
-    final remaining = rewardGoalGrams - totalGrams;
-    return remaining > 0 ? remaining : 0;
-  }
-
-  bool get rewardReady => totalGrams >= rewardGoalGrams;
-
-  void addCollection({required String location, required int grams}) {
-    totalGrams += grams;
-    collectionRecords.insert(
-      0,
-      CollectionRecord(date: '오늘', location: location, grams: grams),
-    );
-    notifyListeners();
-  }
-
-  void reserveProgram(Program program) {
-    if (reservations.any((item) => item.title == program.title)) {
-      return;
-    }
-    reservations.insert(0, program);
-    notifyListeners();
   }
 }

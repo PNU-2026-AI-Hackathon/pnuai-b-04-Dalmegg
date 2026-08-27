@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { getAdminMe, loginAdmin, logoutAdmin, registerAdmin } from '../api/auth'
 import { ApiError, clearAuthTokens, getAccessToken, getRefreshToken } from '../api/client'
-import { createShop, listShops } from '../api/shops'
+import { createShop, listShops, updateShop } from '../api/shops'
 import type { AdminUserRead, ShopRead } from '../api/types'
 import { operatorAccounts, type OperatorAccount } from '../mock/operators'
 
@@ -25,6 +25,7 @@ interface AuthState {
   isAuthenticating: boolean
   login: (email: string, password: string) => Promise<boolean>
   signup: (input: OperatorSignupInput) => Promise<boolean>
+  updateOperatorProfile: (input: Pick<AuthOperator, 'shop_name' | 'region'>) => Promise<boolean>
   logout: () => Promise<void>
   clearLoginError: () => void
   clearSignupError: () => void
@@ -74,13 +75,23 @@ function readStoredOperator(): AuthOperator | null {
       return null
     }
 
+    const normalizedAccount = normalizeAccount(JSON.parse(storedValue) as LegacyOperatorAccount)
+    if (!normalizedAccount) {
+      window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
+      return null
+    }
+
+    if (normalizedAccount.email === 'test') {
+      window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
+      return null
+    }
+
     if (!USE_MOCKS && !getAccessToken() && !getRefreshToken()) {
       window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
       return null
     }
 
-    const normalizedAccount = normalizeAccount(JSON.parse(storedValue) as LegacyOperatorAccount)
-    return normalizedAccount ? toAuthOperator(normalizedAccount) : null
+    return toAuthOperator(normalizedAccount)
   } catch {
     window.localStorage.removeItem(CURRENT_OPERATOR_STORAGE_KEY)
     return null
@@ -104,9 +115,11 @@ function readMockOperators(): OperatorAccount[] {
       return operatorAccounts
     }
 
-    return parsedValue
+    const storedAccounts = parsedValue
       .map((account) => normalizeAccount(account as LegacyOperatorAccount))
-      .filter((account): account is OperatorAccount => account !== null)
+      .filter((account): account is OperatorAccount => account !== null && account.email !== 'test')
+
+    return storedAccounts
   } catch {
     window.localStorage.removeItem(MOCK_OPERATORS_STORAGE_KEY)
     return operatorAccounts
@@ -130,8 +143,19 @@ function persistOperator(operator: AuthOperator) {
 }
 
 function toAuthOperator(account: OperatorAccount): AuthOperator {
-  const { password, ...operator } = account
-  return operator
+  return {
+    id: account.id,
+    email: account.email,
+    full_name: account.full_name,
+    is_active: account.is_active,
+    role: account.role,
+    shop_id: account.shop_id,
+    shop_name: account.shop_name,
+    region: account.region,
+    address: account.address,
+    phone: account.phone,
+    description: account.description,
+  }
 }
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string) {
@@ -221,7 +245,7 @@ function buildOperatorFromShop(admin: AdminUserRead, shop: ShopRead): AuthOperat
   }
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   operator: readStoredOperator(),
   loginError: null,
   signupError: null,
@@ -333,6 +357,39 @@ export const useAuthStore = create<AuthState>((set) => ({
         })
         return false
       }
+    }
+  },
+  updateOperatorProfile: async (input) => {
+    const currentOperator = get().operator
+    if (!currentOperator) {
+      return false
+    }
+
+    const shopName = input.shop_name.trim() || currentOperator.shop_name
+    const region = input.region.trim() || currentOperator.region
+
+    if (!USE_MOCKS && currentOperator.shop_id <= 0) {
+      return false
+    }
+
+    try {
+      const shop = USE_MOCKS
+        ? null
+        : await updateShop(currentOperator.shop_id, { name: shopName, region })
+      const operator = {
+        ...currentOperator,
+        shop_name: shop?.name ?? shopName,
+        region: shop?.region ?? region,
+        address: shop?.address ?? currentOperator.address,
+        phone: shop?.phone ?? currentOperator.phone,
+        description: shop?.description ?? currentOperator.description,
+      }
+
+      persistOperator(operator)
+      set({ operator })
+      return true
+    } catch {
+      return false
     }
   },
   logout: async () => {

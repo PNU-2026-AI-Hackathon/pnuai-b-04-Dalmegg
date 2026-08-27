@@ -36,6 +36,7 @@ interface NotificationState {
   setAlerts: (alerts: AdminAlert[]) => void
   markAsRead: (alertId: number) => void
   markAllAsRead: () => void
+  resolveAlert: (alertId: number, note: string) => void
   resetAlerts: () => void
 }
 
@@ -49,7 +50,15 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     set((state) => {
       const alerts = incomingAlerts.map((incomingAlert) => {
         const previousAlert = state.alerts.find((alert) => alert.id === incomingAlert.id)
-        return previousAlert ? { ...incomingAlert, is_read: previousAlert.is_read } : incomingAlert
+        return previousAlert
+          ? {
+              ...incomingAlert,
+              is_read: previousAlert.is_read,
+              is_resolved: previousAlert.is_resolved,
+              resolution_note: previousAlert.resolution_note,
+              resolved_at: previousAlert.resolved_at,
+            }
+          : incomingAlert
       })
       writeStoredAlerts(alerts)
       return { alerts }
@@ -67,6 +76,23 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   markAllAsRead: () => {
     set((state) => {
       const alerts = state.alerts.map((alert) => ({ ...alert, is_read: true }))
+      writeStoredAlerts(alerts)
+      return { alerts }
+    })
+  },
+  resolveAlert: (alertId, note) => {
+    set((state) => {
+      const alerts = state.alerts.map((alert) =>
+        alert.id === alertId
+          ? {
+              ...alert,
+              is_read: true,
+              is_resolved: true,
+              resolution_note: note.trim() || '운영자가 조치 완료로 처리했습니다.',
+              resolved_at: new Date().toISOString(),
+            }
+          : alert,
+      )
       writeStoredAlerts(alerts)
       return { alerts }
     })

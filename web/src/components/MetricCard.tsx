@@ -2,7 +2,7 @@ import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import type { MetricCardData } from '../types/dashboard'
 
 const toneStyle = {
-  green: 'bg-emerald-50 text-emerald-600',
+  green: 'bg-rose-50 text-rose-600',
   amber: 'bg-amber-50 text-amber-600',
   blue: 'bg-sky-50 text-sky-600',
   violet: 'bg-violet-50 text-violet-600',
@@ -18,7 +18,7 @@ export function MetricCard({ metric }: { metric: MetricCardData }) {
         <div className={`grid size-11 place-items-center rounded-2xl ${toneStyle[metric.tone]}`}>
           <Icon size={21} />
         </div>
-        <span className={`flex items-center gap-0.5 text-xs font-bold ${isUp ? 'text-emerald-600' : 'text-sky-600'}`}>
+        <span className={`flex items-center gap-0.5 text-xs font-bold ${isUp ? 'text-rose-600' : 'text-sky-600'}`}>
           {isUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
           {metric.change}
         </span>

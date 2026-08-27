@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'app_illustration.dart';
 
 class GradeCard extends StatelessWidget {
   const GradeCard({super.key, required this.totalGrams});
@@ -30,7 +31,7 @@ class GradeCard extends StatelessWidget {
               ],
             ),
             child: const Center(
-              child: Text('🥚', style: TextStyle(fontSize: 24)),
+              child: AppIllustration(type: IllustrationType.egg, size: 34),
             ),
           ),
           const SizedBox(width: 12),

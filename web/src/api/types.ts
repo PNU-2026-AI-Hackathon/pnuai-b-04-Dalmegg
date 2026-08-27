@@ -31,6 +31,14 @@ export interface ShopCreate {
   description?: string | null
 }
 
+export interface ShopUpdate {
+  name?: string
+  region?: string
+  address?: string
+  phone?: string | null
+  description?: string | null
+}
+
 export interface DashboardAlertRead {
   id: number
   type: 'sensor' | 'reservation' | 'stock' | string
@@ -70,6 +78,30 @@ export interface CollectionSummary {
   total_reward_points: number
   participant_count: number
   collection_count: number
+}
+
+export interface SmartFarmDeviceRead {
+  id: number
+  farm_uid: string
+  device_uid: string
+  name: string | null
+  last_seen_at: string | null
+}
+
+export interface SensorReadingRead {
+  id: number
+  message_id: string
+  temperature_c: number | null
+  humidity_pct: number | null
+  soil_moisture_pct: number | null
+  light_lux: number | null
+  water_level_pct: number | null
+  measured_at: string
+  received_at: string
+}
+
+export interface SensorLatestRead extends SensorReadingRead {
+  device: SmartFarmDeviceRead
 }
 
 export interface CollectionRankingItem {

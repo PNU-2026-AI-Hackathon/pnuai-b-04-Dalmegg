@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/program.dart';
 import '../theme/app_theme.dart';
+import 'app_illustration.dart';
 import 'progress_bar_widget.dart';
 
 class ProgramCard extends StatelessWidget {
@@ -22,48 +23,70 @@ class ProgramCard extends StatelessWidget {
         (program.totalSpots - program.remainingSpots) / program.totalSpots;
 
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: const BoxDecoration(
-              color: AppTheme.warmIvory,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Row(
-              children: [
-                Container(
+          Stack(
+            children: [
+              Container(
+                height: 124,
+                width: double.infinity,
+                alignment: Alignment.center,
+                color: AppTheme.purpleBg,
+                child: const AppIllustration(
+                  type: IllustrationType.flowerClass,
+                  size: 92,
+                ),
+              ),
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
-                    vertical: 3,
+                    horizontal: 9,
+                    vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: program.tagColor,
-                    borderRadius: BorderRadius.circular(6),
+                    color: booked ? AppTheme.primaryGreen : program.tagColor,
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    program.tag,
+                    booked ? '예약완료' : program.tag,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '잔여 ${program.remainingSpots}자리',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.mutedText,
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '잔여 ${program.remainingSpots}자리',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.warmBlack,
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -87,7 +110,7 @@ class ProgramCard extends StatelessWidget {
                 _infoRow(Icons.calendar_month_outlined, program.date),
                 const SizedBox(height: 4),
                 _infoRow(Icons.location_on_outlined, program.location),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -106,9 +129,10 @@ class ProgramCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 ProgressBarWidget(value: fillRate),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       program.price,
@@ -119,18 +143,23 @@ class ProgramCard extends StatelessWidget {
                       ),
                     ),
                     booked
-                        ? OutlinedButton(
-                            onPressed: null,
-                            style: OutlinedButton.styleFrom(
-                              disabledForegroundColor: AppTheme.primaryGreen,
-                              side: const BorderSide(
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.lightGreen,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              '예약 완료',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
                                 color: AppTheme.primaryGreen,
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
                             ),
-                            child: const Text('예약 완료'),
                           )
                         : ElevatedButton(
                             onPressed: () {
@@ -139,6 +168,12 @@ class ProgramCard extends StatelessWidget {
                                 const SnackBar(content: Text('예약이 완료되었습니다')),
                               );
                             },
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size(96, 42),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                            ),
                             child: const Text('예약하기'),
                           ),
                   ],
