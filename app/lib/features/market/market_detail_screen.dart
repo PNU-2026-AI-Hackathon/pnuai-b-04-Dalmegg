@@ -313,42 +313,33 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
 class _MarketDetailViewData {
   const _MarketDetailViewData({
     required this.name,
-    required this.location,
+    required this.address,
+    required this.phone,
+    required this.description,
     required this.badge,
-    required this.distance,
-    required this.openHours,
-    required this.minimumOrder,
     required this.svgAsset,
   });
 
   final String name;
-  final String location;
+  final String address;
+  final String phone;
+  final String description;
   final String badge;
-  final String distance;
-  final String openHours;
-  final String minimumOrder;
   final String svgAsset;
 
   factory _MarketDetailViewData.fromShop(Shop? shop, int shopId) {
     return _MarketDetailViewData(
       name: shop?.name ?? '꽃마켓',
-      location: shop?.address.isNotEmpty == true ? shop!.address : '부산',
+      address: shop?.address.isNotEmpty == true
+          ? shop!.address
+          : (shop?.region ?? ''),
+      phone: shop?.phone ?? '',
+      description: shop?.description ?? '',
       badge: (shop?.averageRating ?? 0) >= 4.7 ? '베스트' : '입점마켓',
-      distance: _distanceLabel(shopId),
-      openHours: '09:00–18:00',
-      minimumOrder: '10,000원',
       svgAsset: shopId.isEven
           ? 'assets/illustrations/flower_shop.svg'
           : 'assets/illustrations/smart_farm.svg',
     );
-  }
-
-  static String _distanceLabel(int shopId) {
-    const distances = ['0.8km', '2.3km', '5.1km', '7.4km'];
-    if (shopId <= 0) {
-      return distances.first;
-    }
-    return distances[(shopId - 1) % distances.length];
   }
 }
 
@@ -473,35 +464,33 @@ class _MarketInfoCard extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              '${market.location} · ${market.distance}',
-              style: textTheme.bodySmall?.copyWith(
-                color: AppColors.muted,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            if (market.description.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                market.description,
+                style: textTheme.bodyMedium?.copyWith(
+                  color: AppColors.muted,
+                  fontSize: 13,
+                  height: 1.55,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: InfoChipCard(
-                    icon: Icons.schedule_rounded,
-                    label: '영업시간',
-                    value: market.openHours,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: InfoChipCard(
-                    icon: Icons.shopping_bag_outlined,
-                    label: '최소주문',
-                    value: market.minimumOrder,
-                  ),
-                ),
-              ],
-            ),
+            ],
+            if (market.address.trim().isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _ShopInfoRow(
+                icon: Icons.location_on_outlined,
+                label: '주소',
+                value: market.address,
+              ),
+            ],
+            if (market.phone.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _ShopInfoRow(
+                icon: Icons.phone_outlined,
+                label: '전화',
+                value: market.phone,
+              ),
+            ],
           ],
         ),
       ),
@@ -509,9 +498,8 @@ class _MarketInfoCard extends StatelessWidget {
   }
 }
 
-class InfoChipCard extends StatelessWidget {
-  const InfoChipCard({
-    super.key,
+class _ShopInfoRow extends StatelessWidget {
+  const _ShopInfoRow({
     required this.icon,
     required this.label,
     required this.value,
@@ -525,44 +513,34 @@ class InfoChipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.greenBg,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: AppColors.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: textTheme.labelSmall?.copyWith(
-                    color: AppColors.muted,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: AppColors.foreground,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.primary),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 34,
+          child: Text(
+            label,
+            style: textTheme.labelSmall?.copyWith(
+              color: AppColors.muted,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
             ),
           ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: textTheme.bodySmall?.copyWith(
+              color: AppColors.foreground,
+              fontSize: 12,
+              height: 1.4,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

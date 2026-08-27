@@ -38,15 +38,16 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();
-    await tester.drag(
-      find.byType(CustomScrollView),
-      const Offset(0, -450),
-    );
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -450));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const ValueKey('recommended-flower-1')));
     await tester.pumpAndSettle();
     expect(find.byType(MarketDetailScreen), findsOneWidget);
+    expect(find.text('계란껍질 비료로 재배한 계절 꽃을 판매하는 제휴 농장입니다.'), findsOneWidget);
+    expect(find.text('010-1234-5678'), findsOneWidget);
+    expect(find.text('영업시간'), findsNothing);
+    expect(find.text('최소주문'), findsNothing);
 
     await tester.tap(find.byIcon(Icons.arrow_back_rounded));
     await tester.pumpAndSettle();
@@ -63,10 +64,7 @@ void main() {
 
     await tester.tap(find.text('홈'));
     await tester.pumpAndSettle();
-    await tester.drag(
-      find.byType(CustomScrollView),
-      const Offset(0, -900),
-    );
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('recommended-program-1')));
     await tester.pumpAndSettle();
