@@ -1,9 +1,13 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, HTTPException, status
 from fastapi import Depends
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.db.session import get_db
+from app.models.smart_farm_automation_setting import SmartFarmAutomationSetting
 from app.mqtt.client import MqttPublishError, publish_actuator_command, publish_pump_command
 from app.schemas.sensor import (
     ActuatorCommandRequest,
@@ -16,6 +20,36 @@ from app.services.sensor import get_device_by_uid
 
 
 router = APIRouter(prefix="/v1/farms", tags=["farm-devices"])
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+async def _sync_manual_actuator_state(
+    db: AsyncSession,
+    *,
+    device_id: int,
+    command: str,
+    state: str,
+) -> None:
+    result = await db.execute(
+        select(SmartFarmAutomationSetting).where(SmartFarmAutomationSetting.device_id == device_id)
+    )
+    setting = result.scalar_one_or_none()
+    if setting is None:
+        setting = SmartFarmAutomationSetting(device_id=device_id)
+        db.add(setting)
+
+    now = _utc_now()
+    if command == "led":
+        setting.last_led_state = state
+        setting.last_led_command_at = now
+    elif command == "pump":
+        setting.last_pump_state = state
+        setting.last_pump_command_at = now
+    setting.updated_at = now
+    await db.commit()
 
 
 async def _publish_device_command(
@@ -45,6 +79,7 @@ async def _publish_device_command(
             detail=str(exc),
         ) from exc
 
+    await _sync_manual_actuator_state(db, device_id=device.id, command=command, state=state)
     topic = f"{settings.mqtt_topic_prefix.strip('/')}/farms/{farm_uid}/devices/{device_uid}/command"
     return topic, command
 
@@ -93,6 +128,7 @@ async def publish_pump_command_endpoint(
             detail=str(exc),
         ) from exc
 
+    await _sync_manual_actuator_state(db, device_id=device.id, command="pump", state=command.state)
     topic = f"{settings.mqtt_topic_prefix.strip('/')}/farms/{farm_uid}/devices/{device_uid}/command"
     return PumpCommandResponse(
         farm_uid=farm_uid,

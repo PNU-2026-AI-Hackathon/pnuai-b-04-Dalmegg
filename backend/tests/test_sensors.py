@@ -9,6 +9,7 @@ from app.main import create_app
 from app.api.routes import farm_devices
 from app.models.sensor_latest import SensorLatest
 from app.models.sensor_reading import SensorReading
+from app.models.smart_farm_automation_setting import SmartFarmAutomationSetting
 from app.services.sensor import SensorTelemetryError, connect_device, handle_telemetry_message
 from tests.helpers import register_admin_and_login
 
@@ -295,6 +296,51 @@ async def test_led_command_endpoint_publishes_mqtt(monkeypatch):
         "command": "led",
         "state": "off",
     }
+
+    await engine.dispose()
+
+
+async def test_led_command_endpoint_syncs_automation_led_state(monkeypatch):
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+    TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
+    async with TestingSessionLocal() as db:
+        device = await connect_device(db, farm_uid="farm-001", device_uid="device-001")
+        db.add(SmartFarmAutomationSetting(device_id=device.id, enabled=True, last_led_state="on"))
+        await db.commit()
+
+    async def fake_publish_actuator_command(
+        settings,
+        *,
+        farm_uid: str,
+        device_uid: str,
+        command: str,
+        state: str,
+    ) -> None:
+        return None
+
+    monkeypatch.setattr(farm_devices, "publish_actuator_command", fake_publish_actuator_command)
+
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/api/v1/farms/farm-001/devices/device-001/led", json={"state": "off"})
+
+    assert response.status_code == 200
+
+    async with TestingSessionLocal() as db:
+        setting = (await db.execute(select(SmartFarmAutomationSetting))).scalar_one()
+        assert setting.enabled is True
+        assert setting.last_led_state == "off"
+        assert setting.last_led_command_at is not None
 
     await engine.dispose()
 
