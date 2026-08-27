@@ -36,7 +36,7 @@ function formatSensorTime(value?: string, currentTimeMs = 0) {
   const minutes = Math.max(0, Math.round((currentTimeMs - date.getTime()) / 60000))
   if (minutes < 1) return '방금 전'
   if (minutes < 60) return `${minutes}분 전`
-  return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit' }).format(date)
+  return new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }).format(date)
 }
 
 function toSensorData(latest: SensorLatestRead, currentTimeMs: number): SensorData[] {

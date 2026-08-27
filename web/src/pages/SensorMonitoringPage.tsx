@@ -37,7 +37,7 @@ function formatTime(value?: string | null) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
-  return minutes < 1 ? '방금 전' : minutes < 60 ? `${minutes}분 전` : new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit' }).format(date)
+  return minutes < 1 ? '방금 전' : minutes < 60 ? `${minutes}분 전` : new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }).format(date)
 }
 
 function mapLatest(latest: SensorLatestRead): SensorData[] {
@@ -50,7 +50,7 @@ function mapLatest(latest: SensorLatestRead): SensorData[] {
 
 function mapHistory(readings: SensorReadingRead[]) {
   return readings.slice().reverse().map((reading) => ({
-    time: new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit' }).format(new Date(reading.measured_at)),
+    time: new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date(reading.measured_at)),
     temperature: reading.temperature_c,
     humidity: reading.humidity_pct,
     light: reading.light_lux,
