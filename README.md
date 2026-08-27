@@ -176,15 +176,16 @@ Flutter 기반 소비자 앱은 다음 흐름을 제공합니다.
 
 ```mermaid
 flowchart LR
-  A[앱 실행] --> B{인증 또는 게스트 모드}
-  B --> C[꽃 목록 조회]
-  C --> D[꽃 주문]
+  A[앱 실행] --> B{인증 또는 발표용 데모 모드}
+  B --> C[꽃집 목록·상세]
+  C --> D[꽃집별 상품·재고 확인]
+  D --> H[복수 상품 주문·주문 내역]
   B --> E[계란껍질 수거 신청]
-  B --> F[꽃꾸 체험 조회·예약]
-  B --> G[마이페이지: 기여도·리워드·예약]
+  B --> F[꽃꾸 체험 조회·예약·취소]
+  B --> G[마이페이지: 기여도·리워드·수거·예약·주문]
 ```
 
-- 인증 토큰은 앱 실행 중 상태로 관리합니다.
+- 인증 토큰은 Keychain / Keystore 기반 보안 저장소에 보관하며, Access Token 만료 시 Refresh Token으로 한 번 갱신합니다.
 
 ### 3.2 관리자 웹
 
@@ -288,6 +289,9 @@ AI는 개발자의 의사결정을 대체하지 않고, UI/UX 초안, 코드 분
 | 관리자 웹 | `npm run typecheck` | 통과 |
 | 관리자 웹 | `npm run lint` | 통과 |
 | 관리자 웹 | `npm run build` | 통과 |
+| 소비자 앱 | `flutter analyze` | 통과 |
+| 소비자 앱 | `flutter test -j 1` | **8 passed** |
+| 소비자 앱 | Android Debug APK Build | 통과 |
 
 `pytest`의 Skip 1건은 실제 MySQL 연결이 불가능한 경우 건너뛰도록 작성된 Database 연결 테스트입니다. Web은 정적 검사·Production Build와 주요 화면의 수동 동선 점검으로 검증했습니다.
 
@@ -379,23 +383,23 @@ npm run build
 
 ### 4.4 소비자 앱
 
-Android Emulator에서 로컬 Backend를 사용할 때 기본 API 주소는 `http://10.0.2.2:8000/api`입니다.
+API 주소는 `/api`를 제외한 Backend Origin을 지정합니다. Android Emulator에서 로컬 Backend를 사용할 때는 `http://10.0.2.2:8000`을 사용합니다.
 
 ```bash
 cd app
 flutter pub get
-flutter run
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
 다른 서버를 사용할 경우 다음과 같이 지정합니다.
 
 ```bash
-flutter run --dart-define=API_BASE_URL=https://example.com/api
+flutter run --dart-define=API_BASE_URL=https://example.com
 ```
 
 ```bash
 flutter analyze
-flutter test
+flutter test -j 1
 ```
 
 ---
