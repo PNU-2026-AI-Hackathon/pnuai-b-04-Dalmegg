@@ -1,17 +1,27 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 
 class SensorTelemetryPayload(BaseModel):
-    message_id: str = Field(min_length=1, max_length=120)
-    temperature_c: float | None = None
-    humidity_pct: float | None = Field(default=None, ge=0, le=100)
-    soil_moisture_pct: float | None = Field(default=None, ge=0, le=100)
-    light_lux: float | None = Field(default=None, ge=0)
-    water_level_pct: float | None = Field(default=None, ge=0, le=100)
-    measured_at: datetime | None = None
+    message_id: str = Field(validation_alias=AliasChoices("message_id", "messageId"), min_length=1, max_length=120)
+    temperature_c: float | None = Field(default=None, validation_alias=AliasChoices("temperature_c", "temperature"))
+    humidity_pct: float | None = Field(default=None, validation_alias=AliasChoices("humidity_pct", "humidity"), ge=0, le=100)
+    soil_moisture_pct: float | None = Field(
+        default=None,
+        validation_alias=AliasChoices("soil_moisture_pct", "soilMoisture"),
+        ge=0,
+        le=100,
+    )
+    light_lux: float | None = Field(default=None, validation_alias=AliasChoices("light_lux", "light"), ge=0)
+    water_level_pct: float | None = Field(
+        default=None,
+        validation_alias=AliasChoices("water_level_pct", "waterLevel"),
+        ge=0,
+        le=100,
+    )
+    measured_at: datetime | None = Field(default=None, validation_alias=AliasChoices("measured_at", "measuredAt"))
 
     @model_validator(mode="after")
     def require_sensor_value(self):
