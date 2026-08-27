@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     mqtt_password: str | None = None
     mqtt_topic_prefix: str = "dalmegg/v1"
     mqtt_history_interval_seconds: int = 60
+    mqtt_accept_unregistered_devices: bool = False
     cors_origins: str = "*"
 
     @property

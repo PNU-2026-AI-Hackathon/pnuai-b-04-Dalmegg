@@ -9,7 +9,7 @@ from app.main import create_app
 from app.api.routes import farm_devices
 from app.models.sensor_latest import SensorLatest
 from app.models.sensor_reading import SensorReading
-from app.services.sensor import SensorTelemetryError, handle_telemetry_message
+from app.services.sensor import SensorTelemetryError, connect_device, handle_telemetry_message
 from tests.helpers import register_admin_and_login
 
 
@@ -90,6 +90,25 @@ async def test_telemetry_ignores_duplicate_message_id(tmp_path):
     await engine.dispose()
 
 
+async def test_telemetry_rejects_unregistered_device_when_required(tmp_path):
+    engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'registered-sensors.db'}", future=True)
+    SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async with SessionLocal() as db:
+        with pytest.raises(SensorTelemetryError, match="Unregistered device"):
+            await handle_telemetry_message(
+                db,
+                topic="dalmegg/v1/farms/farm-001/devices/device-001/telemetry",
+                payload='{"message_id":"unregistered-001","temperature_c":24.8}',
+                accept_unregistered_device=False,
+            )
+
+    await engine.dispose()
+
+
 async def test_telemetry_rejects_invalid_topic_and_payload(tmp_path):
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'invalid-sensors.db'}", future=True)
     SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
@@ -153,7 +172,51 @@ async def test_admin_can_read_latest_sensor_reading(tmp_path):
     await engine.dispose()
 
 
+async def test_admin_can_connect_sensor_device(tmp_path):
+    engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'sensor-connect-api.db'}", future=True)
+    TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        token = await register_admin_and_login(client, "sensor-connect-admin@example.com")
+        response = await client.post(
+            "/api/admin/sensors/devices",
+            json={"farm_uid": "farm-001", "device_uid": "device-001", "name": "1번 재배대"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+    assert response.status_code == 201
+    assert response.json()["farm_uid"] == "farm-001"
+    assert response.json()["device_uid"] == "device-001"
+    assert response.json()["name"] == "1번 재배대"
+
+    await engine.dispose()
+
+
 async def test_pump_command_endpoint_publishes_mqtt(monkeypatch):
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+    TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
+    async with TestingSessionLocal() as db:
+        await connect_device(db, farm_uid="farm-001", device_uid="device-001")
+
     published = {}
 
     async def fake_publish_pump_command(settings, *, farm_uid: str, device_uid: str, state: str) -> None:
@@ -165,6 +228,7 @@ async def test_pump_command_endpoint_publishes_mqtt(monkeypatch):
     monkeypatch.setattr(farm_devices, "publish_pump_command", fake_publish_pump_command)
 
     app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post("/api/v1/farms/farm-001/devices/device-001/pump", json={"state": "on"})
@@ -179,8 +243,23 @@ async def test_pump_command_endpoint_publishes_mqtt(monkeypatch):
         "state": "on",
     }
 
+    await engine.dispose()
+
 
 async def test_led_command_endpoint_publishes_mqtt(monkeypatch):
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+    TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
+    async with TestingSessionLocal() as db:
+        await connect_device(db, farm_uid="farm-001", device_uid="device-001")
+
     published = {}
 
     async def fake_publish_actuator_command(
@@ -200,6 +279,7 @@ async def test_led_command_endpoint_publishes_mqtt(monkeypatch):
     monkeypatch.setattr(farm_devices, "publish_actuator_command", fake_publish_actuator_command)
 
     app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post("/api/v1/farms/farm-001/devices/device-001/led", json={"state": "off"})
@@ -216,9 +296,22 @@ async def test_led_command_endpoint_publishes_mqtt(monkeypatch):
         "state": "off",
     }
 
+    await engine.dispose()
+
 
 async def test_actuator_command_endpoint_rejects_unknown_command():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+    TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
     app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.post(
@@ -227,3 +320,28 @@ async def test_actuator_command_endpoint_rejects_unknown_command():
         )
 
     assert response.status_code == 422
+
+    await engine.dispose()
+
+
+async def test_actuator_command_endpoint_rejects_unconnected_device():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+    TestingSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
+    app = create_app()
+    app.dependency_overrides[get_db] = override_get_db
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/api/v1/farms/farm-001/devices/device-001/pump", json={"state": "on"})
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Device is not connected."
+
+    await engine.dispose()

@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_admin
 from app.db.session import get_db
 from app.models.admin_user import AdminUser
-from app.schemas.sensor import SensorLatestRead, SensorReadingRead, SmartFarmDeviceRead
-from app.services.sensor import get_latest_reading, list_devices, list_readings
+from app.schemas.sensor import SensorLatestRead, SensorReadingRead, SmartFarmDeviceConnectRequest, SmartFarmDeviceRead
+from app.services.sensor import connect_device, get_latest_reading, list_devices, list_readings
 
 
 router = APIRouter(prefix="/admin/sensors", tags=["admin-sensors"])
@@ -17,6 +17,20 @@ async def list_sensor_devices_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     return await list_devices(db)
+
+
+@router.post("/devices", response_model=SmartFarmDeviceRead, status_code=status.HTTP_201_CREATED)
+async def connect_sensor_device_endpoint(
+    device_in: SmartFarmDeviceConnectRequest,
+    _current_admin: AdminUser = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    return await connect_device(
+        db,
+        farm_uid=device_in.farm_uid,
+        device_uid=device_in.device_uid,
+        name=device_in.name,
+    )
 
 
 @router.get("/farms/{farm_uid}/devices/{device_uid}/readings/latest", response_model=SensorLatestRead)

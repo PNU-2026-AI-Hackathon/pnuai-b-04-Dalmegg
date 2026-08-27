@@ -39,6 +39,12 @@ class SmartFarmDeviceRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SmartFarmDeviceConnectRequest(BaseModel):
+    farm_uid: str = Field(min_length=1, max_length=80)
+    device_uid: str = Field(min_length=1, max_length=80)
+    name: str | None = Field(default=None, max_length=120)
+
+
 class SensorReadingRead(BaseModel):
     id: int
     message_id: str

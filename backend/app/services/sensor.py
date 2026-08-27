@@ -68,6 +68,30 @@ async def get_or_create_device(
     return device
 
 
+async def connect_device(
+    db: AsyncSession,
+    *,
+    farm_uid: str,
+    device_uid: str,
+    name: str | None = None,
+) -> SmartFarmDevice:
+    result = await db.execute(
+        select(SmartFarmDevice).where(
+            SmartFarmDevice.farm_uid == farm_uid,
+            SmartFarmDevice.device_uid == device_uid,
+        )
+    )
+    device = result.scalar_one_or_none()
+    if device is None:
+        device = SmartFarmDevice(farm_uid=farm_uid, device_uid=device_uid, name=name)
+        db.add(device)
+    elif name is not None:
+        device.name = name
+    await db.commit()
+    await db.refresh(device)
+    return device
+
+
 async def _should_store_history(
     db: AsyncSession,
     *,
@@ -95,6 +119,7 @@ async def handle_telemetry_message(
     payload: bytes | str,
     topic_prefix: str = "dalmegg/v1",
     history_interval_seconds: int = 60,
+    accept_unregistered_device: bool = True,
 ) -> SensorReading | None:
     farm_uid, device_uid = parse_telemetry_topic(topic, topic_prefix)
     try:
@@ -113,7 +138,13 @@ async def handle_telemetry_message(
     if existing_result.scalar_one_or_none() is not None:
         return None
 
-    device = await get_or_create_device(db, farm_uid=farm_uid, device_uid=device_uid, seen_at=received_at)
+    if accept_unregistered_device:
+        device = await get_or_create_device(db, farm_uid=farm_uid, device_uid=device_uid, seen_at=received_at)
+    else:
+        device = await get_device_by_uid(db, farm_uid=farm_uid, device_uid=device_uid)
+        if device is None:
+            raise SensorTelemetryError("Unregistered device.")
+        device.last_seen_at = received_at
     sensor_values = telemetry.model_dump(exclude={"measured_at"})
     latest_values = telemetry.model_dump(exclude={"measured_at"}, exclude_unset=True)
     db.add(SensorMessageLog(message_id=telemetry.message_id, topic=topic, payload=payload_data, received_at=received_at))

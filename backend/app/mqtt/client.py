@@ -85,6 +85,15 @@ async def run_mqtt_listener(settings: Settings) -> None:
                                 payload=message.payload,
                                 topic_prefix=settings.mqtt_topic_prefix,
                                 history_interval_seconds=settings.mqtt_history_interval_seconds,
+                                accept_unregistered_device=settings.mqtt_accept_unregistered_devices,
+                            )
+                            from app.services.farm_automation import evaluate_automation_for_telemetry_topic
+
+                            await evaluate_automation_for_telemetry_topic(
+                                db,
+                                topic=str(message.topic),
+                                topic_prefix=settings.mqtt_topic_prefix,
+                                settings=settings,
                             )
                         except SensorTelemetryError:
                             logger.exception("Invalid sensor telemetry message on topic %s", message.topic)
