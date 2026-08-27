@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/collection_record.dart';
@@ -156,11 +157,93 @@ class MyScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 _BookingCard(state: state),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '꽃 주문 내역',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/orders'),
+                      child: const Text('전체보기'),
+                    ),
+                  ],
+                ),
+                _OrderPreviewCard(state: state),
                 const SizedBox(height: 24),
               ]),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _OrderPreviewCard extends StatelessWidget {
+  const _OrderPreviewCard({required this.state});
+
+  final EggBloomState state;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.orders.isEmpty) {
+      return Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => context.push('/orders'),
+          child: const Padding(
+            padding: EdgeInsets.all(18),
+            child: Text(
+              '아직 주문한 꽃이 없습니다.',
+              style: TextStyle(fontSize: 12, color: AppTheme.mutedText),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final latest = state.orders.first;
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => context.push('/orders'),
+        child: ListTile(
+          leading: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.pinkSurface,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: const Center(
+              child: AppIllustration(
+                type: IllustrationType.flowerShop,
+                size: 32,
+              ),
+            ),
+          ),
+          title: Text(
+            '최근 주문 #${latest.id} · ${latest.statusLabel}',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+          subtitle: Text(
+            '${latest.formattedDate} · 총 ${state.orders.length}건',
+            style: const TextStyle(fontSize: 11),
+          ),
+          trailing: Text(
+            latest.formattedTotalAmount,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: AppTheme.primaryGreen,
+            ),
+          ),
+        ),
       ),
     );
   }

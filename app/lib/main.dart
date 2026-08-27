@@ -22,6 +22,7 @@ import 'screens/auth/register_screen.dart';
 import 'screens/experience/experience_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/my/my_screen.dart';
+import 'screens/my/order_history_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/bottom_nav_bar.dart';
 
@@ -91,6 +92,10 @@ class EggBloomApp extends StatelessWidget {
           final marketId = state.pathParameters['id'] ?? '';
           return MarketDetailScreen(marketId: marketId);
         },
+      ),
+      GoRoute(
+        path: '/orders',
+        builder: (context, state) => const OrderHistoryScreen(),
       ),
     ],
   );

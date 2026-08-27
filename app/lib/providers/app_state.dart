@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/collection_record.dart';
 import '../models/flower.dart';
+import '../models/order_record.dart';
 import '../models/program.dart';
 import '../models/shop.dart';
 import '../repositories/collection_repository.dart';
@@ -82,6 +83,7 @@ class EggBloomState extends ChangeNotifier {
   final List<CollectionRecord> collectionRecords = [];
   final List<Program> reservations = [];
   final List<Flower> flowers = [];
+  final List<OrderRecord> orders = [];
   final List<Program> programs = [];
   final List<Shop> shops = [];
   final Set<int> _reservingProgramIds = {};
@@ -137,6 +139,12 @@ class EggBloomState extends ChangeNotifier {
         flowers
           ..clear()
           ..addAll(loadedFlowers);
+      }),
+      load('주문 내역', () async {
+        final loadedOrders = await _orderRepository.fetchMyOrders();
+        orders
+          ..clear()
+          ..addAll(loadedOrders);
       }),
       load('체험 프로그램', () async {
         final loadedPrograms = await _programRepository.fetchPrograms();
@@ -194,20 +202,25 @@ class EggBloomState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> requestFlowerOrder(
+  Future<OrderRecord> requestFlowerOrder(
     Flower flower, {
     required int quantity,
-  }) async {
-    await requestFlowerOrderItems([
+  }) {
+    return requestFlowerOrderItems([
       OrderItemRequest(flowerId: flower.id, quantity: quantity),
     ]);
   }
 
-  Future<void> requestFlowerOrderItems(List<OrderItemRequest> items) async {
+  Future<OrderRecord> requestFlowerOrderItems(
+    List<OrderItemRequest> items,
+  ) async {
     if (items.isEmpty) {
-      return;
+      throw ArgumentError.value(items, 'items', '주문 상품이 필요합니다.');
     }
-    await _orderRepository.createOrder(items: items);
+    final order = await _orderRepository.createOrder(items: items);
+    orders.insert(0, order);
+    notifyListeners();
+    return order;
   }
 
   Future<List<Flower>> fetchFlowersByShop(int shopId) {

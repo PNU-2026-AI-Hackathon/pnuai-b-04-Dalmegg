@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app/models/collection_record.dart';
 import 'package:app/models/flower.dart';
+import 'package:app/models/order_record.dart';
 import 'package:app/models/program.dart';
 import 'package:app/models/shop.dart';
 import 'package:app/providers/app_state.dart';
@@ -114,6 +115,50 @@ void main() {
     expect(user.accumulatedEggshellGrams, 320);
     expect(user.fullName, '사용자');
   });
+
+  test('기존 주문을 불러오고 새 주문을 목록 맨 앞에 추가한다', () async {
+    final orderRepository = _OrderRepository(
+      initial: [_order(id: 12, totalAmount: 4200)],
+    );
+    final state = EggBloomState.withRepositories(
+      userRepository: _UserRepository(),
+      collectionRepository: _EmptyCollectionRepository(),
+      flowerRepository: _FlowerRepository(),
+      orderRepository: orderRepository,
+      programRepository: _ProgramRepository(program),
+      reservationRepository: _ReservationRepository(),
+      shopRepository: _ShopRepository(),
+      autoLoad: false,
+    );
+
+    await state.loadInitialData();
+    expect(state.orders.single.id, 12);
+
+    await state.requestFlowerOrderItems(const [
+      OrderItemRequest(flowerId: 1, quantity: 2),
+    ]);
+
+    expect(orderRepository.createdItems.single.quantity, 2);
+    expect(state.orders.first.id, 99);
+    expect(state.orders, hasLength(2));
+  });
+}
+
+OrderRecord _order({required int id, required int totalAmount}) {
+  return OrderRecord(
+    id: id,
+    totalAmount: totalAmount,
+    status: 'paid',
+    createdAt: DateTime(2026, 8, 27, 13, 30),
+    items: [
+      OrderLine(
+        flowerId: 1,
+        quantity: 1,
+        unitPrice: totalAmount,
+        lineAmount: totalAmount,
+      ),
+    ],
+  );
 }
 
 class _FailingUserRepository implements UserRepository {
@@ -171,8 +216,21 @@ class _FlowerRepository implements FlowerRepository {
 }
 
 class _OrderRepository implements OrderRepository {
+  _OrderRepository({this.initial = const []});
+
+  final List<OrderRecord> initial;
+  List<OrderItemRequest> createdItems = [];
+
   @override
-  Future<void> createOrder({required List<OrderItemRequest> items}) async {}
+  Future<List<OrderRecord>> fetchMyOrders() async => initial;
+
+  @override
+  Future<OrderRecord> createOrder({
+    required List<OrderItemRequest> items,
+  }) async {
+    createdItems = items;
+    return _order(id: 99, totalAmount: 8400);
+  }
 }
 
 class _ProgramRepository implements ProgramRepository {
