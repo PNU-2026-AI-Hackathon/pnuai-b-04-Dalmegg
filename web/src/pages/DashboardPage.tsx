@@ -4,6 +4,7 @@ import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis
 import { useNavigate } from 'react-router-dom'
 import { getDashboardSummary } from '../api/dashboard'
 import { commandLed, commandPump, getFarmAutomation, runFarmAutomation, updateFarmAutomation } from '../api/farmAutomation'
+import { Modal } from '../components/Modal'
 import { listFlowers } from '../api/flowers'
 import { listAdminReservations } from '../api/reservations'
 import { getLatestSensorReading, listSensorDevices } from '../api/sensors'
@@ -12,7 +13,7 @@ import { ROUTES } from '../constants/routes'
 import { flowerInventory, reservations, sensors } from '../mock/dashboard'
 import { useAuthStore } from '../store/useAuthStore'
 import { useNotificationStore } from '../store/useNotificationStore'
-import type { FlowerInventory, Reservation, SensorData } from '../types/dashboard'
+import type { AdminAlert, FlowerInventory, Reservation, SensorData } from '../types/dashboard'
 
 const stateLabel = { normal: '정상', warning: '확인 필요', danger: '즉시 확인' }
 const rangePosition = { temperature: 52, humidity: 54, light: 32, soil: 42 }
@@ -89,6 +90,8 @@ export function DashboardPage() {
   const initializedControlDevice = useRef<string | null>(null)
   const [currentTimeMs, setCurrentTimeMs] = useState(0)
   const [showAllAlerts, setShowAllAlerts] = useState(false)
+  const [resolvingAlert, setResolvingAlert] = useState<AdminAlert | null>(null)
+  const [resolutionNote, setResolutionNote] = useState('')
 
   useEffect(() => {
     const updateCurrentTime = () => setCurrentTimeMs(Date.now())
@@ -229,6 +232,13 @@ export function DashboardPage() {
     }
   }
 
+  function completeAlert() {
+    if (!resolvingAlert) return
+    resolveAlert(resolvingAlert.id, resolutionNote)
+    setResolvingAlert(null)
+    setResolutionNote('')
+  }
+
   const actionAlerts = alerts.filter((alert) => !alert.is_resolved)
   const visibleAlerts = showAllAlerts ? actionAlerts : actionAlerts.slice(0, 3)
   const normalSensorCount = sensorItems.filter((sensor) => sensor.status === 'normal').length
@@ -284,7 +294,7 @@ export function DashboardPage() {
               const urgent = alert.severity === 'danger'
               const actionLabel = alert.type === 'sensor' ? '센서 확인' : alert.type === 'stock' ? '재고 관리' : alert.type === 'order' ? '주문 확인' : '예약 확인'
               const alertArea = alert.type === 'sensor' ? '재배 환경' : alert.type === 'stock' ? '재고 관리' : alert.type === 'order' ? '주문 관리' : '체험 운영'
-              return <article key={alert.id} className="grid grid-cols-[5px_1fr_auto] gap-4 py-5"><span className={urgent ? 'bg-red-600' : alert.severity === 'warning' ? 'bg-amber-500' : 'bg-rose-600'} /><div><span className="text-xs font-bold text-slate-500">{urgent ? '위험' : alert.severity === 'warning' ? '주의' : '안내'} · {alertArea}</span><strong className="mt-1.5 block text-base font-semibold text-[#243029]">{alert.title}</strong><span className="mt-1.5 block text-sm text-slate-500">{alert.message}</span></div><div className="flex self-center flex-col items-end gap-2"><button type="button" onClick={() => { markAsRead(alert.id); navigate(navigateToAlert(alert.type)) }} className="text-xs font-bold text-rose-800 hover:text-rose-950">{actionLabel}<ArrowRight className="ml-1 inline" size={13} /></button><button type="button" onClick={() => resolveAlert(alert.id, '')} className="rounded-md border border-emerald-200 px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-50">조치 완료</button></div></article>
+              return <article key={alert.id} className="grid grid-cols-[5px_1fr_auto] gap-4 py-5"><span className={urgent ? 'bg-red-600' : alert.severity === 'warning' ? 'bg-amber-500' : 'bg-rose-600'} /><div><span className="text-xs font-bold text-slate-500">{urgent ? '위험' : alert.severity === 'warning' ? '주의' : '안내'} · {alertArea}</span><strong className="mt-1.5 block text-base font-semibold text-[#243029]">{alert.title}</strong><span className="mt-1.5 block text-sm text-slate-500">{alert.message}</span></div><div className="flex self-center flex-col items-end gap-2"><button type="button" onClick={() => { markAsRead(alert.id); navigate(navigateToAlert(alert.type)) }} className="text-xs font-bold text-rose-800 hover:text-rose-950">{actionLabel}<ArrowRight className="ml-1 inline" size={13} /></button><button type="button" onClick={() => { setResolvingAlert(alert); setResolutionNote("") }} className="rounded-md border border-emerald-200 px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-50">조치 완료</button></div></article>
             })}
             {actionAlerts.length === 0 && <p className="py-8 text-center text-sm text-slate-500">확인이 필요한 운영 알림이 없습니다.</p>}
             {actionAlerts.length > 3 && <div className="border-t border-[#dfe5dc] py-4 text-center"><button type="button" onClick={() => setShowAllAlerts((isOpen) => !isOpen)} className="text-xs font-bold text-rose-800 hover:text-rose-950">{showAllAlerts ? '접기' : `더보기 · 미조치 ${actionAlerts.length - 3}건`}</button></div>}
@@ -294,6 +304,8 @@ export function DashboardPage() {
       </section>
 
       <section className="mt-8"><article className="border-t border-[#b9c7b9] pt-4"><div className="flex items-start justify-between"><div><h2 className="section-title">꽃 재고 현황</h2><p className="section-description">판매 가능 수량 · 주 단위</p></div><button type="button" onClick={() => navigate(ROUTES.flowers)} className="text-xs font-bold text-rose-800 hover:text-rose-950">재고 관리 <ArrowRight className="ml-1 inline" size={13} /></button></div><div className="mt-4 h-64 min-h-64 w-full min-w-0"><ResponsiveContainer width="100%" height={256} minWidth={0}><BarChart data={sortedInventory} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}><CartesianGrid vertical={false} stroke="#dfe5dc" strokeDasharray="3 3" /><XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#59665d', fontSize: 11 }} dy={8} /><YAxis axisLine={false} tickLine={false} tick={{ fill: '#748077', fontSize: 10 }} /><Tooltip contentStyle={{ borderRadius: 4, border: '1px solid #d5ddd4', boxShadow: 'none' }} formatter={(value) => [`${value}주`, '재고']} /><Bar dataKey="stock_quantity" radius={[2, 2, 0, 0]} maxBarSize={48}>{sortedInventory.map((item) => <Cell key={item.name} fill={item.stock_quantity > 0 && item.stock_quantity <= 5 ? '#d97706' : item.stock_quantity === 0 ? '#e11d48' : '#d15b86'} />)}</Bar></BarChart></ResponsiveContainer></div></article></section>
+
+      {resolvingAlert && <Modal title="조치 완료 처리" description={resolvingAlert.title} onClose={() => setResolvingAlert(null)}><form onSubmit={(event) => { event.preventDefault(); completeAlert() }}><label className="block"><span className="form-label">조치 내용</span><textarea autoFocus value={resolutionNote} onChange={(event) => setResolutionNote(event.target.value)} className="form-input min-h-28 resize-none" placeholder="예: 급수 장치 점검 후 관수를 완료했습니다." /></label><p className="mt-3 text-xs text-slate-500">완료 처리한 항목은 알림 목록에 이력으로 남습니다.</p><div className="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-5"><button type="button" onClick={() => setResolvingAlert(null)} className="secondary-button">취소</button><button className="primary-button">조치 완료</button></div></form></Modal>}
 
     </div>
   )
