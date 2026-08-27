@@ -102,6 +102,19 @@ export interface SmartFarmDeviceRead {
   last_seen_at: string | null
 }
 
+export interface FarmAutomationStatus {
+  farm_uid: string
+  device_uid: string
+  setting: {
+    enabled: boolean
+    last_pump_state: 'on' | 'off' | null
+    last_led_state: 'on' | 'off' | null
+    pump_run_seconds: number
+  }
+  pump_loop_running: boolean
+  actions: Array<{ command: 'pump' | 'led'; state: 'on' | 'off'; reason: string; published: boolean }>
+}
+
 export interface SensorReadingRead {
   id: number
   message_id: string

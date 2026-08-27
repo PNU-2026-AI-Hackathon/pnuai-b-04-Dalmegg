@@ -94,8 +94,12 @@ export function SensorMonitoringPage() {
         if (!ignore) setIsLive(false)
       }
     }
-    loadSensors()
-    return () => { ignore = true }
+    void loadSensors()
+    const intervalId = window.setInterval(() => void loadSensors(), 15_000)
+    return () => {
+      ignore = true
+      window.clearInterval(intervalId)
+    }
   }, [])
 
   const selected = sensorItems.find((sensor) => sensor.id === selectedSensor) ?? sensorItems[0]

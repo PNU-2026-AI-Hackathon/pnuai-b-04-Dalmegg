@@ -1,12 +1,13 @@
-import { ArrowRight, CheckCircle2, CircleAlert, CloudOff } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { ArrowRight, Bot, CheckCircle2, CircleAlert, CloudOff, Lightbulb, Power } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useNavigate } from 'react-router-dom'
 import { getDashboardSummary } from '../api/dashboard'
+import { commandLed, commandPump, getFarmAutomation, runFarmAutomation, updateFarmAutomation } from '../api/farmAutomation'
 import { listFlowers } from '../api/flowers'
 import { listAdminReservations } from '../api/reservations'
 import { getLatestSensorReading, listSensorDevices } from '../api/sensors'
-import type { SensorLatestRead } from '../api/types'
+import type { FarmAutomationStatus, SensorLatestRead, SmartFarmDeviceRead } from '../api/types'
 import { ROUTES } from '../constants/routes'
 import { flowerInventory, reservations, sensors } from '../mock/dashboard'
 import { useAuthStore } from '../store/useAuthStore'
@@ -15,6 +16,7 @@ import type { FlowerInventory, Reservation, SensorData } from '../types/dashboar
 
 const stateLabel = { normal: '정상', warning: '확인 필요', danger: '즉시 확인' }
 const rangePosition = { temperature: 52, humidity: 54, light: 32, soil: 42 }
+const actuatorStateStorageKey = (farmUid: string, deviceUid: string) => `dalmegg.actuator-state.${farmUid}.${deviceUid}`
 
 const sensorDefinition = [
   { id: 'temperature', name: '온도', unit: '°C', key: 'temperature_c', min: 20, max: 26 },
@@ -78,6 +80,13 @@ export function DashboardPage() {
   const [sensorItems, setSensorItems] = useState<SensorData[]>(sensors)
   const [sensorUpdatedAt, setSensorUpdatedAt] = useState<string | null>(null)
   const [sensorSource, setSensorSource] = useState<'live' | 'fallback'>('fallback')
+  const [controlDevice, setControlDevice] = useState<SmartFarmDeviceRead | null>(null)
+  const [automation, setAutomation] = useState<FarmAutomationStatus | null>(null)
+  const [controlMessage, setControlMessage] = useState<string | null>(null)
+  const [isControlling, setIsControlling] = useState(false)
+  const [actuatorState, setActuatorState] = useState<{ pump: 'on' | 'off'; led: 'on' | 'off' }>({ pump: 'off', led: 'off' })
+  const lastAutomatedReadingAt = useRef<string | null>(null)
+  const initializedControlDevice = useRef<string | null>(null)
   const [currentTimeMs, setCurrentTimeMs] = useState(0)
   const [showAllAlerts, setShowAllAlerts] = useState(false)
 
@@ -87,6 +96,30 @@ export function DashboardPage() {
     const intervalId = window.setInterval(updateCurrentTime, 60_000)
     return () => window.clearInterval(intervalId)
   }, [])
+
+  useEffect(() => {
+    if (!controlDevice || !automation?.setting.enabled || !sensorUpdatedAt || lastAutomatedReadingAt.current === sensorUpdatedAt) return
+    lastAutomatedReadingAt.current = sensorUpdatedAt
+
+    void runFarmAutomation(controlDevice.farm_uid, controlDevice.device_uid)
+      .then((status) => setAutomation(status))
+      .catch(() => setControlMessage('새 센서값에 대한 자동화 실행에 실패했습니다.'))
+  }, [automation?.setting.enabled, controlDevice, sensorUpdatedAt])
+
+  useEffect(() => {
+    if (!controlDevice || !automation) return
+    const key = `${controlDevice.farm_uid}/${controlDevice.device_uid}`
+    if (initializedControlDevice.current === key) return
+    initializedControlDevice.current = key
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(actuatorStateStorageKey(controlDevice.farm_uid, controlDevice.device_uid)) ?? '{}')
+      const pump = stored.pump === 'on' || stored.pump === 'off' ? stored.pump : automation.setting.last_pump_state ?? 'off'
+      const led = stored.led === 'on' || stored.led === 'off' ? stored.led : automation.setting.last_led_state ?? 'off'
+      setActuatorState({ pump, led })
+    } catch {
+      setActuatorState({ pump: automation.setting.last_pump_state ?? 'off', led: automation.setting.last_led_state ?? 'off' })
+    }
+  }, [automation, controlDevice])
 
   useEffect(() => {
     let ignore = false
@@ -106,10 +139,23 @@ export function DashboardPage() {
         if (!ignore) setReservationItems(nextReservations)
       } catch { /* Keep demonstration data when the reservation API is unavailable. */ }
 
+    }
+    loadDashboardData()
+    return () => { ignore = true }
+  }, [operator?.shop_id, setAlerts])
+
+  useEffect(() => {
+    let ignore = false
+    async function loadSensorData() {
       try {
         const devices = await listSensorDevices()
         const device = [...devices].sort((a, b) => (b.last_seen_at ?? '').localeCompare(a.last_seen_at ?? ''))[0]
         if (!device) throw new Error('No sensor device')
+        if (!ignore) setControlDevice(device)
+        try {
+          const nextAutomation = await getFarmAutomation(device.farm_uid, device.device_uid)
+          if (!ignore) setAutomation(nextAutomation)
+        } catch { /* Sensor display remains available if automation status is temporarily unavailable. */ }
         const latest = await getLatestSensorReading(device.farm_uid, device.device_uid)
         const nextSensors = toSensorData(latest, Date.now())
         if (!ignore && nextSensors.length > 0) {
@@ -121,9 +167,67 @@ export function DashboardPage() {
         if (!ignore) setSensorSource('fallback')
       }
     }
-    loadDashboardData()
-    return () => { ignore = true }
-  }, [operator?.shop_id, setAlerts])
+
+    void loadSensorData()
+    const intervalId = window.setInterval(() => void loadSensorData(), 15_000)
+    return () => {
+      ignore = true
+      window.clearInterval(intervalId)
+    }
+  }, [])
+
+  async function runControl(action: () => Promise<FarmAutomationStatus | unknown>, message: string, showAutomationActions = false) {
+    setIsControlling(true)
+    setControlMessage(null)
+    try {
+      const result = await action()
+      if (result && typeof result === 'object' && 'setting' in result) {
+        const status = result as FarmAutomationStatus
+        setAutomation(status)
+        if (status.actions.length) setActuatorState((current) => {
+          const next = status.actions.reduce((state, item) => ({ ...state, [item.command]: item.state }), current)
+          if (controlDevice) window.localStorage.setItem(actuatorStateStorageKey(controlDevice.farm_uid, controlDevice.device_uid), JSON.stringify(next))
+          return next
+        })
+        if (showAutomationActions) {
+          const actions = status.actions.map((item) => `${item.command === 'led' ? '조명' : '펌프'} ${item.state.toUpperCase()}${item.published ? ' 명령 발행' : ' 명령 미발행'}`)
+          setControlMessage(actions.length ? `자동화 실행 결과: ${actions.join(', ')}` : '자동화 실행 결과: 현재 AI 기준에서는 제어 명령이 없습니다.')
+          return
+        }
+      } else if (controlDevice) setAutomation(await getFarmAutomation(controlDevice.farm_uid, controlDevice.device_uid))
+      setControlMessage(message)
+    } catch {
+      setControlMessage('명령 전송에 실패했습니다. 연결 상태를 확인하세요.')
+    } finally {
+      setIsControlling(false)
+    }
+  }
+
+  async function toggleAutomation(enabled: boolean) {
+    if (!controlDevice || !automation) return
+    await runControl(async () => {
+      const status = await updateFarmAutomation(controlDevice.farm_uid, controlDevice.device_uid, enabled)
+      return enabled ? runFarmAutomation(controlDevice.farm_uid, controlDevice.device_uid) : status
+    }, enabled ? '자동화 ON: 현재 센서값으로 자동화 판단을 실행했습니다.' : '자동화 OFF: 자동 관리를 해제했습니다.', enabled)
+  }
+
+  async function sendActuatorCommand(command: 'pump' | 'led', state: 'on' | 'off') {
+    if (!controlDevice) return
+    setIsControlling(true)
+    setControlMessage(null)
+    try {
+      if (command === 'pump') await commandPump(controlDevice.farm_uid, controlDevice.device_uid, state)
+      else await commandLed(controlDevice.farm_uid, controlDevice.device_uid, state)
+      const next = { ...actuatorState, [command]: state }
+      setActuatorState(next)
+      window.localStorage.setItem(actuatorStateStorageKey(controlDevice.farm_uid, controlDevice.device_uid), JSON.stringify(next))
+      setControlMessage(`${command === 'pump' ? '펌프' : '조명'} ${state.toUpperCase()} 명령을 전송했습니다.`)
+    } catch {
+      setControlMessage('명령 전송에 실패했습니다. 연결 상태를 확인하세요.')
+    } finally {
+      setIsControlling(false)
+    }
+  }
 
   const actionAlerts = alerts.filter((alert) => !alert.is_resolved)
   const visibleAlerts = showAllAlerts ? actionAlerts : actionAlerts.slice(0, 3)
@@ -160,7 +264,7 @@ export function DashboardPage() {
                 <dd className={`mt-1.5 whitespace-nowrap text-[30px] font-semibold leading-none tracking-[-.06em] tabular-nums md:text-[34px] ${sensor.status === 'danger' ? 'text-rose-700' : sensor.status === 'warning' ? 'text-amber-700' : 'text-[#24352a]'}`}>{sensor.value.toLocaleString()}<span className="ml-1 text-xs font-semibold tracking-normal text-slate-500">{sensor.unit}</span></dd>
                 {sensor.id !== 'light' && <div className="relative mt-4 h-1.5 bg-[#e4e9e2]"><span className={`absolute top-0 size-1.5 -translate-x-1/2 rounded-full ${sensor.status === 'normal' ? 'bg-emerald-600' : sensor.status === 'warning' ? 'bg-amber-500' : 'bg-rose-600'}`} style={{ left: `${rangePosition[sensor.id]}%` }} /></div>}
                 <p className={`${sensor.id === 'light' ? 'mt-4' : 'mt-2'} text-[11px] text-slate-500`}>{sensor.id === 'light' ? `최근 수신 ${sensor.updatedAt}` : `정상 범위 ${sensor.normalRange}`}</p>
-                <p className={`mt-1 text-[11px] font-bold ${sensor.status === 'normal' ? 'text-emerald-700' : sensor.status === 'warning' ? 'text-amber-700' : 'text-red-700'}`}>{stateLabel[sensor.status]}</p>
+                <p className={`${sensor.id === 'light' ? 'hidden' : ''} mt-1 text-[11px] font-bold ${sensor.status === 'normal' ? 'text-emerald-700' : sensor.status === 'warning' ? 'text-amber-700' : 'text-red-700'}`}>{stateLabel[sensor.status]}</p>
               </div>
             ))}
           </dl>
@@ -169,6 +273,8 @@ export function DashboardPage() {
           {sensorIssue ? <><div className="flex items-start gap-3"><CircleAlert className="mt-0.5 text-rose-700" size={22} /><div><p className="text-xs font-bold tracking-[.08em] text-rose-800">우선 조치 필요</p><p className="mt-2 text-lg font-semibold tracking-[-.03em] text-[#283329]">{sensorIssue.name} 수치가 정상 범위를 벗어났습니다.</p><p className="mt-2 text-sm leading-5 text-slate-600">현재 <strong className="font-semibold text-rose-700">{sensorIssue.value.toLocaleString()}{sensorIssue.unit}</strong> / 정상 {sensorIssue.normalRange}</p><p className="mt-2 text-xs font-semibold text-rose-800">권장 조치: {sensorIssue.id === 'soil' ? '급수 상태와 관수 장치를 확인하세요.' : '센서 및 재배 환경을 점검하세요.'}</p></div></div><button type="button" onClick={() => navigate(ROUTES.sensors)} className="mt-6 inline-flex items-center gap-2 bg-rose-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-rose-800">센서 상세 확인 <ArrowRight size={15} /></button></> : <div className="flex items-start gap-3"><CheckCircle2 className="mt-0.5 text-emerald-700" size={22} /><div><p className="text-xs font-bold tracking-[.08em] text-emerald-800">재배 환경 안정</p><p className="mt-2 text-lg font-semibold tracking-[-.03em] text-[#283329]">모든 센서가 정상 범위에 있습니다.</p><p className="mt-2 text-sm leading-5 text-slate-600">다음 수신값도 자동으로 점검합니다.</p></div></div>}
         </div>
       </section>
+
+      <section className="mt-7 border border-[#d9e0d7] bg-[#fffefa] p-5 md:p-6"><div className="flex flex-col justify-between gap-3 border-b border-[#e3e8e1] pb-4 sm:flex-row sm:items-start"><div><p className="text-xs font-bold tracking-[.08em] text-rose-700">DEVICE CONTROL</p><h2 className="mt-1 text-lg font-semibold tracking-[-.03em] text-[#1d2921]">재배 장치 제어</h2><p className="mt-1 text-sm text-slate-500">연결된 센서 장치에 MQTT 제어 명령을 전송합니다.</p></div>{controlDevice && <span className="text-xs font-semibold text-slate-500">{controlDevice.name ?? controlDevice.device_uid} · {controlDevice.farm_uid}</span>}</div>{controlDevice && automation ? <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_1fr]"><div className="rounded-lg bg-[#f4f7f1] p-4"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><Bot size={18} className="text-rose-700" /><div><p className="text-sm font-bold text-[#243029]">관리 자동화</p><p className="mt-0.5 text-xs text-slate-500">AI 추천 기준과 현재 센서값으로 재배 장치를 자동 제어합니다.</p></div></div><div className="grid grid-cols-2 gap-2"><button type="button" disabled={isControlling || automation.setting.enabled} onClick={() => void toggleAutomation(true)} className="rounded-full bg-rose-700 px-4 py-2 text-xs font-bold text-white hover:bg-rose-800 disabled:opacity-40">자동화 ON</button><button type="button" disabled={isControlling || !automation.setting.enabled} onClick={() => void toggleAutomation(false)} className="rounded-full bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700 disabled:opacity-40">자동화 OFF</button></div></div></div><div className="grid grid-cols-2 gap-3"><div className="rounded-lg border border-[#e3e8e1] p-4"><div className="flex items-center gap-2 text-sm font-bold text-[#243029]"><Power size={16} className="text-sky-700" />펌프 <span className="ml-auto text-xs text-slate-500">{actuatorState.pump.toUpperCase()}</span></div><div className="mt-4 grid grid-cols-2 gap-2"><button type="button" disabled={isControlling} onClick={() => void sendActuatorCommand('pump', 'on')} className="border border-sky-200 py-2 text-xs font-bold text-sky-800 hover:bg-sky-50 disabled:opacity-50">ON</button><button type="button" disabled={isControlling} onClick={() => void sendActuatorCommand('pump', 'off')} className="border border-slate-200 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">OFF</button></div></div><div className="rounded-lg border border-[#e3e8e1] p-4"><div className="flex items-center gap-2 text-sm font-bold text-[#243029]"><Lightbulb size={16} className="text-amber-600" />조명 <span className="ml-auto text-xs text-slate-500">{actuatorState.led.toUpperCase()}</span></div><div className="mt-4 grid grid-cols-2 gap-2"><button type="button" disabled={isControlling} onClick={() => void sendActuatorCommand('led', 'on')} className="border border-amber-200 py-2 text-xs font-bold text-amber-800 hover:bg-amber-50 disabled:opacity-50">ON</button><button type="button" disabled={isControlling} onClick={() => void sendActuatorCommand('led', 'off')} className="border border-slate-200 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">OFF</button></div></div></div></div> : <p className="mt-5 text-sm text-slate-500">{controlDevice ? '자동화 상태를 불러오는 중입니다.' : '연결된 센서 장치를 확인하는 중입니다.'}</p>}{controlMessage && <p className="mt-3 text-xs font-semibold text-slate-600">{controlMessage}</p>}</section>
 
       <section className="mt-7 grid items-start gap-6 xl:grid-cols-[1.25fr_.75fr]">
         <div>
