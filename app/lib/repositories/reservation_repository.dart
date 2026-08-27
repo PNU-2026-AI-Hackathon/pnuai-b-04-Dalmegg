@@ -3,10 +3,11 @@ import '../models/program.dart';
 
 abstract class ReservationRepository {
   Future<List<Program>> fetchMyReservations();
-  Future<void> createReservation({
+  Future<Program> createReservation({
     required int programId,
     int participantCount = 1,
   });
+  Future<void> cancelReservation({required int reservationId});
 }
 
 class MockReservationRepository implements ReservationRepository {
@@ -16,10 +17,20 @@ class MockReservationRepository implements ReservationRepository {
   Future<List<Program>> fetchMyReservations() async => const [];
 
   @override
-  Future<void> createReservation({
+  Future<Program> createReservation({
     required int programId,
     int participantCount = 1,
-  }) async {}
+  }) async {
+    return Program.fromReservationJson({
+      'id': programId,
+      'program_id': programId,
+      'status': 'reserved',
+      'total_amount': 0,
+    });
+  }
+
+  @override
+  Future<void> cancelReservation({required int reservationId}) async {}
 }
 
 class ApiReservationRepository implements ReservationRepository {
@@ -37,13 +48,19 @@ class ApiReservationRepository implements ReservationRepository {
   }
 
   @override
-  Future<void> createReservation({
+  Future<Program> createReservation({
     required int programId,
     int participantCount = 1,
   }) async {
-    await apiClient.postJson(
+    final json = await apiClient.postJson(
       '/api/reservations',
       body: {'program_id': programId, 'participant_count': participantCount},
     );
+    return Program.fromReservationJson(json);
+  }
+
+  @override
+  Future<void> cancelReservation({required int reservationId}) async {
+    await apiClient.patchJson('/api/reservations/$reservationId/cancel');
   }
 }

@@ -81,6 +81,13 @@ class AuthSession extends ChangeNotifier {
     notifyListeners();
   }
 
+  void expireSession() {
+    if (!_isAuthenticated) return;
+    _isAuthenticated = false;
+    _errorMessage = '로그인이 만료되었습니다. 다시 로그인해주세요.';
+    notifyListeners();
+  }
+
   String _messageFromError(Object error, {required String fallback}) {
     if (error is SocketException) {
       return '서버에 연결할 수 없습니다. API 주소와 서버 실행 상태를 확인해주세요.';

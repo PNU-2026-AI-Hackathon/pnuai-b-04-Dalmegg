@@ -16,26 +16,26 @@ class MarketListScreen extends StatefulWidget {
 }
 
 class _MarketListScreenState extends State<MarketListScreen> {
-  static const _categories = ['전체', '베스트', '거리순'];
+  static const _categories = ['전체', '베스트'];
 
   String _selectedCategory = '전체';
+  String _query = '';
 
   List<Market> _visibleMarkets(List<Market> sourceMarkets) {
-    final filtered = switch (_selectedCategory) {
+    final categoryFiltered = switch (_selectedCategory) {
       '베스트' => sourceMarkets.where((market) => market.badge == '베스트').toList(),
-      '거리순' => [...sourceMarkets]..sort(_sortByDistance),
       _ => sourceMarkets,
     };
-
-    return filtered;
-  }
-
-  static int _sortByDistance(Market a, Market b) {
-    return _distanceValue(a.dist).compareTo(_distanceValue(b.dist));
-  }
-
-  static double _distanceValue(String value) {
-    return double.tryParse(value.replaceAll('km', '').trim()) ?? 0;
+    final normalizedQuery = _query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) return categoryFiltered;
+    return categoryFiltered
+        .where(
+          (market) =>
+              market.name.toLowerCase().contains(normalizedQuery) ||
+              market.loc.toLowerCase().contains(normalizedQuery) ||
+              market.dist.toLowerCase().contains(normalizedQuery),
+        )
+        .toList();
   }
 
   @override
@@ -46,46 +46,48 @@ class _MarketListScreenState extends State<MarketListScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            title: const Text('꽃마켓'),
-            backgroundColor: Colors.transparent,
-            scrolledUnderElevation: 0,
-            foregroundColor: AppColors.foreground,
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 56),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                const _MarketSearchField(),
-                const SizedBox(height: 14),
-                const _EsgBanner(),
-                const SizedBox(height: 14),
-                _CategoryFilter(
-                  categories: _categories,
-                  selectedCategory: _selectedCategory,
-                  onSelected: (category) {
-                    setState(() => _selectedCategory = category);
-                  },
-                ),
-                const SizedBox(height: 14),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: _MarketListBody(
-                    key: ValueKey(
-                      '$_selectedCategory-${appState.isLoading}-${visibleMarkets.length}',
+      body: SafeArea(
+        bottom: false,
+        child: RefreshIndicator(
+          onRefresh: appState.loadInitialData,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 56),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _MarketSearchField(
+                      onChanged: (value) => setState(() => _query = value),
                     ),
-                    isLoading: appState.isLoading,
-                    errorMessage: appState.errorMessage,
-                    markets: visibleMarkets,
-                  ),
+                    const SizedBox(height: 14),
+                    const _EsgBanner(),
+                    const SizedBox(height: 14),
+                    _CategoryFilter(
+                      categories: _categories,
+                      selectedCategory: _selectedCategory,
+                      onSelected: (category) {
+                        setState(() => _selectedCategory = category);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: _MarketListBody(
+                        key: ValueKey(
+                          '$_selectedCategory-${appState.isLoading}-${visibleMarkets.length}',
+                        ),
+                        isLoading: appState.isLoading,
+                        errorMessage: appState.errorMessage,
+                        markets: visibleMarkets,
+                      ),
+                    ),
+                  ]),
                 ),
-              ]),
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -97,8 +99,8 @@ class _MarketListScreenState extends State<MarketListScreen> {
           id: shops[index].id.toString(),
           name: shops[index].name,
           loc: _locationLabel(shops[index]),
-          badge: shops[index].averageRating >= 4.7 ? '베스트' : 'ESG인증',
-          dist: _distanceLabel(index),
+          badge: shops[index].averageRating >= 4.7 ? '베스트' : '입점마켓',
+          dist: shops[index].region,
           svgAsset: index.isEven
               ? 'assets/illustrations/smart_farm.svg'
               : 'assets/illustrations/flower_shop.svg',
@@ -115,11 +117,6 @@ class _MarketListScreenState extends State<MarketListScreen> {
       return '${parts[0]} ${parts[1]}';
     }
     return shop.address;
-  }
-
-  String _distanceLabel(int index) {
-    const distances = ['0.8km', '2.3km', '5.1km', '7.4km'];
-    return distances[index % distances.length];
   }
 }
 
@@ -187,13 +184,16 @@ class _EmptyMarketMessage extends StatelessWidget {
 }
 
 class _MarketSearchField extends StatelessWidget {
-  const _MarketSearchField();
+  const _MarketSearchField({required this.onChanged});
+
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
+      onChanged: onChanged,
       decoration: InputDecoration(
-        hintText: '마켓 또는 꽃 이름 검색',
+        hintText: '마켓 또는 지역 검색',
         prefixIcon: const Icon(Icons.search_rounded),
         filled: true,
         fillColor: Colors.white,
@@ -247,7 +247,7 @@ class _EsgBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'ESG 인증 마켓만 입점',
+                  '지역 꽃마켓과 상품을 한눈에 확인해요',
                   style: textTheme.bodySmall?.copyWith(
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 11,

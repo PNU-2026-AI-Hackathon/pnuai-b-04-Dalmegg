@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/api_exception.dart';
 import '../../models/flower.dart';
 import '../../models/shop.dart';
 import '../../providers/app_state.dart';
@@ -11,6 +12,7 @@ import '../../providers/auth_session.dart';
 import '../../repositories/order_repository.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/bottom_nav_bar.dart';
+import '../../widgets/flower_image.dart';
 
 class MarketDetailScreen extends StatefulWidget {
   const MarketDetailScreen({super.key, required this.marketId});
@@ -55,13 +57,29 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
   }
 
   void _addProduct(Flower product) {
+    final currentQuantity = _cart[product.id] ?? 0;
+    if (product.stock <= 0) {
+      _showStockMessage('${product.name}은(는) 품절입니다.');
+      return;
+    }
+    if (currentQuantity >= product.stock) {
+      _showStockMessage(
+        '${product.name}은(는) 최대 ${product.stock}개까지 담을 수 있습니다.',
+      );
+      return;
+    }
     setState(() {
-      _cart[product.id] = (_cart[product.id] ?? 0) + 1;
+      _cart[product.id] = currentQuantity + 1;
     });
   }
 
   void _changeProductQuantity(Flower product, int delta) {
-    final nextQuantity = (_cart[product.id] ?? 0) + delta;
+    final currentQuantity = _cart[product.id] ?? 0;
+    final nextQuantity = currentQuantity + delta;
+    if (delta > 0 && currentQuantity >= product.stock) {
+      _showStockMessage('${product.name}의 남은 재고는 ${product.stock}개입니다.');
+      return;
+    }
     setState(() {
       if (nextQuantity <= 0) {
         _cart.remove(product.id);
@@ -71,9 +89,26 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
     });
   }
 
+  void _showStockMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
+  }
+
   Future<bool> _submitOrder() async {
     if (_cartCount == 0 || _isOrdering || _lastFlowers.isEmpty) {
       return false;
+    }
+
+    for (final entry in _cart.entries) {
+      final product = _lastFlowers.firstWhere(
+        (item) => item.id == entry.key,
+        orElse: () => _lastFlowers.first,
+      );
+      if (entry.value > product.stock) {
+        _showStockMessage('${product.name}의 재고가 부족합니다. 수량을 다시 확인해주세요.');
+        return false;
+      }
     }
 
     final authSession = context.read<AuthSession>();
@@ -96,22 +131,39 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
     try {
       await context.read<EggBloomState>().requestFlowerOrderItems(items);
       if (!mounted) return false;
-      setState(_cart.clear);
+      setState(() {
+        _cart.clear();
+        _flowersFuture = context.read<EggBloomState>().fetchFlowersByShop(
+          _shopId,
+        );
+      });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('주문 요청이 완료되었습니다')));
       return true;
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return false;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('주문 요청에 실패했습니다. 다시 시도해주세요')));
+      ).showSnackBar(SnackBar(content: Text(_orderErrorMessage(error))));
       return false;
     } finally {
       if (mounted) {
         setState(() => _isOrdering = false);
       }
     }
+  }
+
+  String _orderErrorMessage(Object error) {
+    if (error is ApiException) {
+      return switch (error.statusCode) {
+        401 => '로그인이 만료되었습니다. 다시 로그인해주세요.',
+        404 => '판매가 종료된 상품이 포함되어 있습니다. 상품 목록을 새로 확인해주세요.',
+        409 => '선택한 상품의 재고가 부족합니다. 수량을 다시 확인해주세요.',
+        _ => error.message,
+      };
+    }
+    return '주문 요청에 실패했습니다. 다시 시도해주세요.';
   }
 
   void _showOrderSheet() {
@@ -212,7 +264,9 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
                             FlowerProductCard(
                               product: product,
                               quantity: _cart[product.id] ?? 0,
-                              onAdd: () => _addProduct(product),
+                              onAdd: (_cart[product.id] ?? 0) >= product.stock
+                                  ? null
+                                  : () => _addProduct(product),
                             ),
                             if (product != flowers.last)
                               const SizedBox(height: 12),
@@ -279,7 +333,7 @@ class _MarketDetailViewData {
     return _MarketDetailViewData(
       name: shop?.name ?? '꽃마켓',
       location: shop?.address.isNotEmpty == true ? shop!.address : '부산',
-      badge: (shop?.averageRating ?? 0) >= 4.7 ? '베스트' : 'ESG인증',
+      badge: (shop?.averageRating ?? 0) >= 4.7 ? '베스트' : '입점마켓',
       distance: _distanceLabel(shopId),
       openHours: '09:00–18:00',
       minimumOrder: '10,000원',
@@ -564,7 +618,7 @@ class FlowerProductCard extends StatelessWidget {
 
   final Flower product;
   final int quantity;
-  final VoidCallback onAdd;
+  final VoidCallback? onAdd;
 
   @override
   Widget build(BuildContext context) {
@@ -587,7 +641,8 @@ class FlowerProductCard extends StatelessWidget {
                 color: product.bgColor,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(product.emoji, style: const TextStyle(fontSize: 30)),
+              clipBehavior: Clip.antiAlias,
+              child: FlowerImage(flower: product, illustrationSize: 42),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -611,11 +666,22 @@ class FlowerProductCard extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    product.stock <= 0 ? '품절' : '재고 ${product.stock}개',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: product.stock <= 0
+                          ? Colors.redAccent
+                          : AppColors.muted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
               ),
             ),
             Material(
-              color: AppColors.primary,
+              color: onAdd == null ? AppTheme.warmMuted : AppColors.primary,
               shape: const CircleBorder(),
               child: InkWell(
                 customBorder: const CircleBorder(),
@@ -626,8 +692,15 @@ class FlowerProductCard extends StatelessWidget {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      const Center(
-                        child: Icon(Icons.add_rounded, color: Colors.white),
+                      Center(
+                        child: Icon(
+                          product.stock <= 0
+                              ? Icons.block_rounded
+                              : Icons.add_rounded,
+                          color: onAdd == null
+                              ? AppTheme.mutedText
+                              : Colors.white,
+                        ),
                       ),
                       if (quantity > 0)
                         Positioned(
@@ -909,7 +982,8 @@ class _OrderSheetItem extends StatelessWidget {
             color: product.bgColor,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: Text(product.emoji, style: const TextStyle(fontSize: 24)),
+          clipBehavior: Clip.antiAlias,
+          child: FlowerImage(flower: product, illustrationSize: 32),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -950,7 +1024,7 @@ class _OrderSheetItem extends StatelessWidget {
             _QuantityStepper(
               quantity: quantity,
               onDecrease: onDecrease,
-              onIncrease: onIncrease,
+              onIncrease: quantity >= product.stock ? null : onIncrease,
             ),
           ],
         ),
@@ -968,7 +1042,7 @@ class _QuantityStepper extends StatelessWidget {
 
   final int quantity;
   final VoidCallback onDecrease;
-  final VoidCallback onIncrease;
+  final VoidCallback? onIncrease;
 
   @override
   Widget build(BuildContext context) {
@@ -1005,7 +1079,7 @@ class _StepperButton extends StatelessWidget {
   const _StepperButton({required this.icon, required this.onTap});
 
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1015,7 +1089,11 @@ class _StepperButton extends StatelessWidget {
       child: SizedBox(
         width: 30,
         height: 30,
-        child: Icon(icon, size: 17, color: AppColors.primary),
+        child: Icon(
+          icon,
+          size: 17,
+          color: onTap == null ? AppTheme.mutedText : AppColors.primary,
+        ),
       ),
     );
   }

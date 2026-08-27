@@ -1,13 +1,16 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:app/features/market/market_detail_screen.dart';
 import 'package:app/main.dart';
+import 'package:app/models/flower.dart';
 
 void main() {
   testWidgets('MVP app shows home dashboard', (WidgetTester tester) async {
     await tester.pumpWidget(const EggBloomApp(useMockRepositories: true));
     await tester.pumpAndSettle();
 
-    expect(find.text('Egg Bloom'), findsOneWidget);
+    expect(find.text('닮은살걀'), findsOneWidget);
     expect(find.text('내 계란껍질 기여량'), findsOneWidget);
     expect(find.textContaining('오늘도 자원순환에'), findsOneWidget);
   });
@@ -26,5 +29,52 @@ void main() {
     await tester.tap(find.text('체험예약'));
     await tester.pumpAndSettle();
     expect(find.text('ESG 꽃꾸 클래스'), findsOneWidget);
+  });
+
+  testWidgets('my page opens order history with product details', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const EggBloomApp(useMockRepositories: true));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('마이'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('꽃 주문 내역'), 300);
+    await tester.tap(find.text('전체보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('꽃 주문 내역'), findsOneWidget);
+    expect(find.text('주문 #101'), findsOneWidget);
+    expect(find.text('미니 거베라'), findsOneWidget);
+    expect(find.text('10,400원'), findsNWidgets(2));
+  });
+
+  testWidgets('out of stock flower disables add action', (
+    WidgetTester tester,
+  ) async {
+    var added = false;
+    const flower = Flower(
+      id: 13,
+      shopId: 3,
+      name: '레드 장미',
+      price: '4,300원',
+      location: '서면 온실',
+      description: '선명한 빨간 장미',
+      emoji: '🌹',
+      stock: 0,
+      bgColor: Color(0xFFFFEBEE),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: FlowerProductCard(product: flower, quantity: 0, onAdd: null),
+        ),
+      ),
+    );
+
+    expect(find.text('품절'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.block_rounded));
+    expect(added, isFalse);
   });
 }

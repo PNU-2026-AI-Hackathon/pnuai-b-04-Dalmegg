@@ -435,20 +435,21 @@ Repository의 `app/` 코드를 기준으로 확인한 현재 구현은 다음과
 
 - Flutter / Dart (`sdk: ^3.12.0`)
 - `provider` + `ChangeNotifier` 기반 상태 관리
-- `http` 기반 REST API Client
-- `MaterialApp` + `IndexedStack` + `BottomNavigationBar` 기반 화면 전환
+- `dart:io` `HttpClient` 기반 REST API Client
+- `go_router` + 5개 하단 Tab Navigation
+- Repository Pattern으로 API / Demo Data Source 분리
 - `--dart-define=API_BASE_URL=...` 기반 API 주소 설정
 
 ### 구현 확인 기능
 
-- 사용자 회원가입 / 로그인 / 로그아웃
-- 로그인 없이 화면을 확인하는 Guest Demo Mode
-- 서버 연결 실패 시 내장 데모 데이터 표시
-- 전체 꽃 상품 조회
-- 꽃 상품 1개 주문
+- 사용자 회원가입 / 로그인 / 로그아웃 / Token 갱신
+- Keychain / Keystore 기반 Token 보안 저장과 앱 재실행 시 로그인 유지
+- `DEMO_MODE=true` 빌드 옵션으로 실행하는 발표용 Demo Mode
+- 꽃집 목록 검색·필터, 꽃집 상세, 꽃집별 상품 조회
+- 재고 범위 수량 조절과 복수 상품 주문, 주문 내역 조회
 - 계란껍질 수거 신청 및 사용자 수거 내역 조회
-- 꽃꾸 체험 프로그램 조회 및 1인 예약
-- 사용자 누적 기여량, CO₂ 절감량, 리워드 포인트, 예약 내역 표시
+- 꽃꾸 체험 프로그램 조회·예약·예약 취소
+- 사용자 누적 기여량, CO₂ 절감량, 리워드, 수거·예약·주문 내역 표시
 
 현재 하단 Navigation은 다음 5개 화면으로 구성된다.
 
@@ -458,20 +459,15 @@ Repository의 `app/` 코드를 기준으로 확인한 현재 구현은 다음과
 
 ### 기획 Flow 대비 현재 차이
 
-7.2의 **꽃집 우선 탐색 원칙은 기획 기준으로 유지**한다. 다만 현재 Flutter 구현은 다음 단계에 있다.
+7.2의 **꽃집 우선 탐색 원칙은 기획 내용을 변경하지 않고 앱에 구현**했다. `GET /api/shops`로 꽃집 목록을 조회하고, 사용자가 꽃집을 선택하면 `GET /api/flowers?shop_id=...`로 해당 꽃집의 상품만 표시한다.
 
-- `GET /api/flowers`로 전체 꽃 목록을 직접 조회한다.
-- 앱 내부에 꽃집 목록 화면, 꽃집 상세 화면, 꽃집 선택 상태가 없다.
-- 꽃의 판매 위치는 API의 `shop_id`를 이용해 `스마트팜 #{shopId}` 형태로 임시 표시한다.
-- 따라서 `꽃집 목록 → 꽃집 선택 → 꽃집별 상품` Flow는 아직 앱에 구현되지 않았다.
-
-추가로 현재 앱에 연결되지 않은 Backend 기능은 즐겨찾기, 리뷰, 맞춤 부케, 1:1 채팅, 주문 내역 조회, 예약 취소다. 수거 사진 UI도 실제 업로드 API와 연결되지 않았다.
+현재 앱에 연결되지 않은 Backend 확장 기능은 즐겨찾기, 리뷰, 맞춤 부케, 1:1 채팅이다. 수거 사진은 Backend가 외부 `image_url`을 받는 구조일 뿐 앱 전용 업로드 API가 없어 현재 UI 범위에서 제외했다.
 
 ---
 
 ## 7.4 현재 확인된 API 연동 흐름
 
-현재 `app/lib/services/api_client.dart`에서 실제 호출하는 endpoint는 다음과 같다.
+현재 `app/lib/core/api_client.dart`와 `app/lib/repositories/`에서 실제 호출하는 endpoint는 다음과 같다.
 
 | 기능 | Method | Endpoint | 인증 |
 |---|---|---|---:|
@@ -479,39 +475,43 @@ Repository의 `app/` 코드를 기준으로 확인한 현재 구현은 다음과
 | 로그인 | POST | `/api/auth/login` | 불필요 |
 | Access Token 갱신 | POST | `/api/auth/refresh` | Refresh Token |
 | 로그아웃 | POST | `/api/auth/logout` | 필요 |
-| 꽃 목록 | GET | `/api/flowers` | 불필요 |
+| 꽃집 목록 | GET | `/api/shops` | 불필요 |
+| 꽃집별 꽃 목록 | GET | `/api/flowers?shop_id={id}` | 불필요 |
 | 꽃꾸 프로그램 목록 | GET | `/api/programs` | 불필요 |
 | 사용자 마이페이지 | GET | `/api/users/me` | 필요 |
 | 사용자 수거 내역 | GET | `/api/eco/contributions` | 필요 |
 | 수거 신청 | POST | `/api/collections` | 필요 |
 | 내 체험 예약 목록 | GET | `/api/reservations` | 필요 |
 | 체험 예약 | POST | `/api/reservations` | 필요 |
+| 체험 예약 취소 | PATCH | `/api/reservations/{id}/cancel` | 필요 |
+| 주문 내역 | GET | `/api/orders` | 필요 |
 | 꽃 주문 | POST | `/api/orders` | 필요 |
 
-API Client는 JSON 요청, Bearer Token 첨부, 8초 Timeout, 401 응답 시 Refresh Token을 이용한 1회 재시도를 구현한다.
+API Client는 JSON 요청, Bearer Token 첨부, 12초 Timeout, 401 응답 시 Refresh Token을 이용한 1회 재시도를 구현한다.
 
-기본 API 주소는 Android Emulator 기준 `http://10.0.2.2:8000/api`다. 다른 환경에서는 빌드 시 `API_BASE_URL`을 지정해야 한다.
+코드의 기본 API 주소는 `http://localhost:8000`이다. Android Emulator는 `http://10.0.2.2:8000`, 실기기는 접근 가능한 외부 Server Origin을 빌드 시 `API_BASE_URL`로 지정해야 한다. Endpoint에 `/api/...`가 포함되므로 Origin에는 `/api`를 붙이지 않는다.
 
-현재 Access Token과 Refresh Token은 앱 메모리에만 저장되므로 앱을 종료하면 로그인 상태가 유지되지 않는다. 운영 배포 전 Keychain / Keystore 기반 보안 저장소 연결이 필요하다.
+Access Token과 Refresh Token은 `flutter_secure_storage`를 통해 iOS Keychain / Android Keystore 기반 저장소에 보관하며, 저장된 Refresh Token이 있으면 앱 재실행 시 Session을 복구한다.
 
 ## 7.5 App Directory 및 검증 상태
 
 ```text
 app/lib/
-├── config/       # API Base URL
-├── models/       # Flower, Program, CollectionRecord, UserProfile
-├── screens/      # auth, home, collect, market, experience, my
-├── services/     # ApiClient
-├── state/        # EggBloomState
+├── core/         # ApiClient, ApiException, TokenStorage
+├── features/     # 꽃마켓 목록·상세
+├── models/       # Shop, Flower, Program, Collection, Order
+├── providers/    # AuthSession, EggBloomState
+├── repositories/ # API / Mock Repository
+├── screens/      # auth, home, collect, experience, my
 ├── theme/
 └── widgets/
 ```
 
-- `app/test/api_client_test.dart`: 인증 Header 전송 및 API Model Mapping 테스트
-- `app/test/widget_test.dart`: 초기 인증 화면 Widget 테스트
-- 선언된 Flutter 테스트는 총 3개다.
-- 현재 조사 환경에는 Flutter SDK와 Android Emulator가 없어 `flutter analyze`, `flutter test`, 실제 기기 실행은 아직 수행하지 못했다.
-- Android Manifest에는 Internet 권한과 Debug Build의 Local HTTP 허용 설정이 반영돼 있다.
+- `app/test/app_state_test.dart`: 부분 API 실패 대응, Model 변환, 예약 취소, 주문 상태 테스트
+- `app/test/widget_test.dart`: Home, 꽃마켓·체험, 주문 내역, 품절 상태 Widget 테스트
+- 2026-08-27 기준 `flutter analyze` 통과, Flutter Test 8개 통과, Android Debug APK Build 성공을 확인했다.
+- Android 실기기에서 외부 Server 로그인, 꽃마켓 조회·주문 흐름을 수동 확인했다.
+- Android Manifest에 Internet 권한과 개발 Server HTTP 통신 허용이 반영돼 있다. 운영 배포 전 HTTPS 전환이 필요하다.
 
 ---
 
@@ -1470,7 +1470,7 @@ Repository 기준 현재 개발 아키텍처는 다음과 같다.
 
 | Component | 기술 | 코드 위치 | 역할 |
 |---|---|---|---|
-| User App | Flutter, Provider, `http` | `app/` | 사용자 인증, 꽃·체험 조회, 주문·예약·수거 |
+| User App | Flutter, Provider, `dart:io` HttpClient | `app/` | 사용자 인증, 꽃집·꽃·체험 조회, 주문·예약·수거 |
 | Admin Web | React, TypeScript, Vite, Zustand, Recharts | `web/` | 관리자 인증, Dashboard, 센서, 재고, 예약 |
 | Backend | FastAPI, Pydantic, SQLAlchemy Async | `backend/` | REST/WebSocket API, Domain Logic, DB |
 | MQTT Broker | Eclipse Mosquitto 2 | `docker-compose.yml`, `mosquitto.conf` | Sensor Telemetry Broker |
@@ -1484,10 +1484,12 @@ Repository 기준 현재 개발 아키텍처는 다음과 같다.
 ```text
 Flutter App
 → POST /api/auth/login
-→ GET /api/flowers
+→ GET /api/shops
+→ GET /api/flowers?shop_id={id}
 → POST /api/orders
 → Order / OrderItem 저장
 → FlowerStock 차감
+→ GET /api/orders로 주문 내역 표시
 ```
 
 ### 체험 예약
@@ -1498,6 +1500,7 @@ Flutter App
 → POST /api/reservations
 → WorkshopBooking 저장
 → WorkshopProgram.booked_count 반영
+→ PATCH /api/reservations/{id}/cancel로 예약 취소
 ```
 
 ### 센서 모니터링
@@ -1577,7 +1580,7 @@ React Admin Web
 
 # 23. 현재 구현 현황
 
-> 아래 상태는 2026-08-24 Repository의 실제 소스와 실행 가능한 검증 결과를 기준으로 한다. 물리적 Hardware는 Repository 밖의 상태를 판단하지 않고 별도로 표시한다.
+> 아래 상태는 2026-08-27 Repository의 실제 소스와 실행 가능한 검증 결과를 기준으로 한다. 물리적 Hardware는 Repository 밖의 상태를 판단하지 않고 별도로 표시한다.
 
 상태 표시:
 
@@ -1589,17 +1592,15 @@ React Admin Web
 | 영역 | 기능 | 상태 |
 |---|---|---:|
 | App | 회원가입 / 로그인 / Token 갱신 | ✅ 코드 구현 |
-| App | Guest / Offline Demo Mode | ✅ 코드 구현 |
-| App | 꽃 전체 목록 조회 | ✅ 코드 구현 |
-| App | 꽃 1개 주문 API 연동 | ✅ 코드 구현 |
+| App | 발표용 Demo Mode | ✅ 코드 구현 |
+| App | 꽃집 목록·상세 / 꽃집별 상품 Flow | ✅ API 연동·실기기 확인 |
+| App | 재고 기반 복수 상품 주문 / 주문 내역 | ✅ API 연동·실기기 확인 |
 | App | 수거 신청 / 내 수거 내역 | ✅ 코드 구현 |
-| App | 체험 목록 / 예약 | ✅ 코드 구현 |
+| App | 체험 목록 / 예약 / 예약 취소 | ✅ API 연동 |
 | App | 마이페이지 기여도·리워드·예약 표시 | ✅ 코드 구현 |
-| App | 꽃집 리스트 | 🔵 미구현 |
-| App | 꽃집 상세 / 꽃집별 상품 Flow | 🔵 미구현 |
-| App | Token 보안 저장 / 로그인 유지 | 🔵 미구현 |
+| App | Token 보안 저장 / 로그인 유지 | ✅ Keychain / Keystore 기반 |
 | App | 채팅 / 맞춤 부케 / 리뷰 / 즐겨찾기 | 🔵 미연동 |
-| App | Flutter Analyze / Test / Emulator 검증 | 🟡 SDK 환경 필요 |
+| App | Flutter Analyze / Test / Android Build | ✅ Analyze 통과·Test 8개·Debug APK Build |
 | Backend | 회원가입 / 로그인 | ✅ |
 | Backend | 사용자 / 관리자 권한 | ✅ |
 | Backend | 꽃집 관리 | ✅ |
@@ -1637,10 +1638,8 @@ Web ↔ Backend REST API
 Sensor MQTT → Backend 저장 → Web 조회
 
 미구현 또는 실행 검증 필요:
-꽃집 우선 App Flow
 Web → Backend → Pump 제어
 실제 Hardware Firmware 및 Pin 연결
-Flutter Emulator End-to-End 실행
 실제 MySQL을 포함한 전체 Docker / 배포 구성
 ```
 
@@ -2319,43 +2318,44 @@ npm run build
 |---|---|
 | Framework | Flutter / Dart SDK `^3.12.0` |
 | State | Provider + 단일 `EggBloomState(ChangeNotifier)` |
-| API | `http` 기반 `ApiClient` |
-| Navigation | 인증 Gate + 5개 Tab `IndexedStack` |
+| API | `dart:io` `HttpClient` 기반 `ApiClient` + Domain Repository |
+| Navigation | `go_router` 인증 Gate + 5개 Tab |
 | Authentication | User JWT Access / Refresh Token |
-| Offline | Guest Mode + 내장 Demo Data |
+| Token Storage | `flutter_secure_storage` Keychain / Keystore |
+| Demo | `DEMO_MODE=true` + 내장 Mock Repository |
 | Target | Android, iOS, Web, macOS, Linux, Windows Scaffold 포함 |
 
 ### Directory
 
 ```text
-app/lib/config       API Base URL
+app/lib/core         ApiClient, ApiException, TokenStorage
+app/lib/features     Market 목록·상세
 app/lib/models       API / 화면 Model
-app/lib/screens      Auth, Home, Collect, Market, Experience, My
-app/lib/services     ApiClient
-app/lib/state        EggBloomState
+app/lib/providers    AuthSession, EggBloomState
+app/lib/repositories API / Mock Repository
+app/lib/screens      Auth, Home, Collect, Experience, My
 app/lib/theme        Material Theme
 app/lib/widgets      공통 Widget
-app/test             API Client / Widget Test
+app/test             State / Model / Widget Test
 ```
 
 ### Repository Pattern
 
-별도 Repository Layer는 없다. 현재 구조는 다음과 같다.
+사용자, 수거, 꽃, 주문, 체험, 예약, 꽃집을 API / Mock Repository로 분리했다.
 
 ```text
 Screen / Widget
 → EggBloomState
-→ ApiClient
+→ Domain Repository
+→ ApiClient 또는 Mock Data
 → FastAPI
 ```
 
-Domain이 커질 경우 `ShopRepository`, `OrderRepository`, `ReservationRepository` 등으로 분리할 수 있지만 현재 Final MVP 코드에는 적용되지 않았다.
-
 ### Navigation
 
-- `AppGate`: 로그인 또는 Guest 여부에 따라 Auth Screen / Main Navigator 분기
+- `AuthGate`: 저장된 Session 여부에 따라 Auth Screen / Main Navigator 분기
 - Main Navigator: 홈, 수거등록, 꽃마켓, 체험예약, 마이
-- Named Route나 Router Package는 사용하지 않는다.
+- `go_router`로 로그인·회원가입·꽃마켓 상세·주문 내역 Route를 관리한다.
 
 ### Authentication / API Client
 
@@ -2363,21 +2363,21 @@ Domain이 커질 경우 `ShopRepository`, `OrderRepository`, `ReservationReposit
 - Access / Refresh Token 발급
 - Bearer Header 첨부
 - 401 시 Refresh 후 1회 재시도
-- 8초 Timeout 및 사용자용 Error Message
-- Token은 Memory에만 저장되며 앱 재실행 시 로그인 유지 안 됨
+- 12초 Timeout 및 사용자용 Error Message
+- Token을 Keychain / Keystore 기반 보안 저장소에 보관하고 앱 재실행 시 Session 복구
 
 ### 주요 Screen과 연결 기능
 
 | Screen | 기능 |
 |---|---|
-| Auth | 회원가입, 로그인, Guest 진입 |
+| Auth | 회원가입, 로그인, 로그아웃, Session 복구 |
 | Home | 기여도, 추천 꽃, 추천 체험 |
 | Collect | 수거 장소·중량·메모 신청 |
-| Market | 꽃 전체 목록, 재고 표시, 1개 주문 |
-| Experience | 프로그램 목록, 예약 |
-| My | 사용자 기여도·CO₂·Point·수거·예약 내역 |
+| Market | 꽃집 목록·상세, 꽃집별 상품, 재고 확인, 복수 상품 주문 |
+| Experience | 프로그램 목록, 예약, 예약 취소 |
+| My / Orders | 기여도·CO₂·Point·수거·예약·주문 내역 |
 
-꽃집 목록과 상세 Screen은 없으며 현재 Market은 전체 꽃 목록을 표시한다. 이는 7.2의 꽃집 우선 기획 Flow와 다른 현재 구현 상태다.
+꽃마켓은 7.2의 기획대로 `꽃집 목록 → 꽃집 상세 → 해당 꽃집의 상품 → 주문`으로 연결된다.
 
 ### Build / Run
 
@@ -2385,11 +2385,11 @@ Domain이 커질 경우 `ShopRepository`, `OrderRepository`, `ReservationReposit
 cd app
 flutter pub get
 flutter analyze
-flutter test
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api
+flutter test -j 1
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
-Android Emulator에서 Host의 `localhost:8000`은 `10.0.2.2:8000`으로 접근한다. 현재 조사 환경에는 Flutter SDK와 Android Emulator가 없어 App Test 3개와 실제 Build는 실행하지 못했다.
+Android Emulator에서 Host의 `localhost:8000`은 `10.0.2.2:8000`으로 접근한다. 실기기에서는 접근 가능한 Server Origin을 `API_BASE_URL`로 지정한다. 2026-08-27에 Flutter Analyze, Test 8개, Android Debug APK Build와 외부 Server 실기기 핵심 흐름을 확인했다.
 
 ---
 

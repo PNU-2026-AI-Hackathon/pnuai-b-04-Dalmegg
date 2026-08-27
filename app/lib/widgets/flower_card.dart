@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/flower.dart';
 import '../theme/app_theme.dart';
-import 'app_illustration.dart';
+import 'flower_image.dart';
 
 class FlowerCard extends StatefulWidget {
   const FlowerCard({super.key, required this.flower, required this.onBuy});
@@ -23,11 +23,6 @@ class _FlowerCardState extends State<FlowerCard> {
     final stockColor = widget.flower.stock <= 5
         ? const Color(0xFFE57373)
         : AppTheme.primaryGreen;
-    final illustration = illustrationForFlower(
-      widget.flower.name,
-      widget.flower.emoji,
-    );
-
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -39,9 +34,7 @@ class _FlowerCardState extends State<FlowerCard> {
                 height: 140,
                 width: double.infinity,
                 color: widget.flower.bgColor,
-                child: Center(
-                  child: AppIllustration(type: illustration, size: 92),
-                ),
+                child: FlowerImage(flower: widget.flower, illustrationSize: 92),
               ),
               Positioned(
                 top: 10,

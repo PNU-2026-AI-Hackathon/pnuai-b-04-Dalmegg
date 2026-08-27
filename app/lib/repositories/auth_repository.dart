@@ -71,6 +71,16 @@ class ApiAuthRepository implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    await tokenStorage.clear();
+    final refreshToken = await tokenStorage.readRefreshToken();
+    try {
+      await apiClient.postJson(
+        '/api/auth/logout',
+        body: {'refresh_token': refreshToken},
+      );
+    } catch (_) {
+      // 서버가 응답하지 않아도 기기의 로그인 정보는 반드시 제거한다.
+    } finally {
+      await tokenStorage.clear();
+    }
   }
 }

@@ -1,5 +1,5 @@
 name: app
-description: "A new Flutter project."
+description: "닮은살걀 소비자용 Flutter 앱"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -37,8 +37,8 @@ dependencies:
   flutter_svg: ^2.0.10+1
   go_router: ^13.2.5
   google_fonts: ^6.2.1
-  image_picker: ^1.1.2
   provider: ^6.1.2
+  flutter_secure_storage: ^11.0.0
 
 dev_dependencies:
   flutter_test:

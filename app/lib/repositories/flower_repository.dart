@@ -77,6 +77,15 @@ class ApiFlowerRepository implements FlowerRepository {
         ? '/api/flowers'
         : '/api/flowers?shop_id=$shopId';
     final list = await apiClient.getList(path);
-    return list.whereType<Map<String, dynamic>>().map(Flower.fromJson).toList();
+    return list.whereType<Map<String, dynamic>>().map((json) {
+      final normalized = Map<String, dynamic>.from(json);
+      final imageUrl = normalized['image_url'];
+      if (imageUrl is String && imageUrl.startsWith('/')) {
+        normalized['image_url'] = apiClient.baseUrl
+            .resolve(imageUrl)
+            .toString();
+      }
+      return Flower.fromJson(normalized);
+    }).toList();
   }
 }
