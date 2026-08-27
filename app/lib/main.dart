@@ -296,7 +296,11 @@ class _MainNavigatorState extends State<MainNavigator> {
       ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          if (index != _currentIndex) {
+            context.go('/?tab=$index');
+          }
+        },
       ),
     );
   }

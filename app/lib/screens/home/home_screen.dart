@@ -169,56 +169,66 @@ class _MiniFlowerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 136,
-      decoration: BoxDecoration(
+      child: Material(
         color: Colors.white,
+        elevation: 2,
+        shadowColor: Colors.black26,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 92,
-            width: double.infinity,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: flower.bgColor,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: FlowerImage(flower: flower, illustrationSize: 70),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: ValueKey('recommended-flower-${flower.id}'),
+          onTap: () {
+            if (flower.shopId > 0) {
+              context.push('/market/${flower.shopId}');
+            } else {
+              context.go('/?tab=2');
+            }
+          },
+          child: Semantics(
+            button: true,
+            label: '${flower.name} 구매 화면 열기',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  flower.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Container(
+                  height: 92,
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  color: flower.bgColor,
+                  child: FlowerImage(flower: flower, illustrationSize: 70),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  flower.price,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.primaryGreen,
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        flower.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        flower.price,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.primaryGreen,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -231,60 +241,74 @@ class _FeaturedProgramCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              color: AppTheme.lightGreen,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const AppIllustration(
-              type: IllustrationType.flowerClass,
-              size: 48,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Material(
+      color: Colors.white,
+      elevation: 2,
+      shadowColor: Colors.black26,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: ValueKey('recommended-program-${program.id}'),
+        onTap: () => context.go('/?tab=3'),
+        child: Semantics(
+          button: true,
+          label: '${program.title} 예약 화면 열기',
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Text(
-                  program.title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: AppTheme.lightGreen,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const AppIllustration(
+                    type: IllustrationType.flowerClass,
+                    size: 48,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  program.date,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.mutedText,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        program.title,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        program.date,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.mutedText,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${program.price} · 잔여 ${program.remainingSpots}자리',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '${program.price} · 잔여 ${program.remainingSpots}자리',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.primaryGreen,
-                    fontWeight: FontWeight.w700,
-                  ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppTheme.mutedText,
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
