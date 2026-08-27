@@ -38,6 +38,18 @@ const ReservationsPage = lazy(() =>
   })),
 )
 
+const CollectionRequestsPage = lazy(() =>
+  import('../pages/CollectionRequestsPage').then((module) => ({
+    default: module.CollectionRequestsPage,
+  })),
+)
+
+const OrdersPage = lazy(() =>
+  import('../pages/OrdersPage').then((module) => ({
+    default: module.OrdersPage,
+  })),
+)
+
 function RouteLoader() {
   return (
     <div className="grid min-h-[60vh] place-items-center">
@@ -108,6 +120,14 @@ const router = createBrowserRouter([
       {
         path: ROUTES.reservations,
         element: lazyPage(<ReservationsPage />),
+      },
+      {
+        path: ROUTES.collections,
+        element: lazyPage(<CollectionRequestsPage />),
+      },
+      {
+        path: ROUTES.orders,
+        element: lazyPage(<OrdersPage />),
       },
     ],
   },

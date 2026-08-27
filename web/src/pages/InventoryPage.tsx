@@ -393,9 +393,9 @@ export function InventoryPage() {
     <div className="mx-auto max-w-[1500px]">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-bold text-rose-600">FLOWER INVENTORY</p>
-          <h1 className="page-title">꽃 재고 관리</h1>
-          <p className="page-description">판매 가능한 꽃의 이미지, 색상, 설명, 수량, 가격을 관리하세요.</p>
+          <p className="text-[11px] font-bold tracking-[.12em] text-rose-700">FLOWER INVENTORY</p>
+          <h1 className="mt-2 text-[28px] font-semibold tracking-[-.05em] text-[#1d2921] md:text-[32px]">꽃 재고 관리</h1>
+          <p className="mt-2 text-sm text-slate-500">판매 가능한 꽃의 이미지, 색상, 설명, 수량, 가격을 관리하세요.</p>
         </div>
         <button onClick={() => setModalMode('add')} className="primary-button self-start">
           <Plus size={17} /> 꽃 추가

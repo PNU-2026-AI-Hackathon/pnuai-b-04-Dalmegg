@@ -76,7 +76,7 @@ export interface FlowerInventory {
 }
 
 export interface AdminAlert {
-  id: number
+  id: number | string
   type: 'sensor' | 'reservation' | 'stock' | string
   title: string
   message: string

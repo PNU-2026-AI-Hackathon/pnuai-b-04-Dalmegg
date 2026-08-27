@@ -6,5 +6,7 @@ export const ROUTES = {
   sensors: '/sensors',
   flowers: '/flowers',
   reservations: '/reservations',
+  collections: '/collections',
+  orders: '/orders',
   notFound: '/not-found',
 } as const

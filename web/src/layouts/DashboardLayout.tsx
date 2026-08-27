@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   Bell,
   CalendarDays,
+  ClipboardCheck,
   ChevronDown,
   CircleGauge,
   Flower2,
@@ -14,6 +15,8 @@ import {
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Logo } from '../components/Logo'
+import { listAdminOrders } from '../api/orders'
+import { listAdminReservations } from '../api/reservations'
 import { ROUTES } from '../constants/routes'
 import { useAuthStore } from '../store/useAuthStore'
 import { useFarmStore } from '../store/useFarmStore'
@@ -25,20 +28,30 @@ const navigation = [
   { label: '센서 모니터링', path: ROUTES.sensors, icon: Gauge },
   { label: '꽃 재고 관리', path: ROUTES.flowers, icon: Flower2 },
   { label: '예약 관리', path: ROUTES.reservations, icon: CalendarDays },
+  { label: '수거 요청 관리', path: ROUTES.collections, icon: ClipboardCheck },
+  { label: '주문 관리', path: ROUTES.orders, icon: PackageX },
 ]
 
 type AlertConfig = { icon: typeof AlertTriangle; tone: string }
 
-const alertConfig: Record<'sensor' | 'reservation' | 'stock', AlertConfig> = {
+const alertConfig: Record<'sensor' | 'reservation' | 'stock' | 'order', AlertConfig> = {
   sensor: { icon: AlertTriangle, tone: 'bg-rose-50 text-rose-600' },
   reservation: { icon: CalendarDays, tone: 'bg-sky-50 text-sky-600' },
   stock: { icon: PackageX, tone: 'bg-amber-50 text-amber-600' },
+  order: { icon: ClipboardCheck, tone: 'bg-rose-50 text-rose-700' },
 }
 
 const defaultAlertConfig: AlertConfig = { icon: AlertTriangle, tone: 'bg-slate-100 text-slate-600' }
 
 function getAlertConfig(type: AdminAlert['type']) {
   return type in alertConfig ? alertConfig[type as keyof typeof alertConfig] : defaultAlertConfig
+}
+
+function getOrderTitle(order: { items: { flower_id: number; flower_name?: string }[] }) {
+  const [firstItem, ...remainingItems] = order.items
+  if (!firstItem) return '꽃 주문'
+  const flowerName = firstItem.flower_name ?? `꽃 상품 #${firstItem.flower_id}`
+  return remainingItems.length ? `${flowerName} 외 ${remainingItems.length}종 주문` : `${flowerName} 주문`
 }
 
 export function DashboardLayout() {
@@ -57,6 +70,8 @@ export function DashboardLayout() {
   const alerts = useNotificationStore((state) => state.alerts)
   const markAsRead = useNotificationStore((state) => state.markAsRead)
   const markAllAsRead = useNotificationStore((state) => state.markAllAsRead)
+  const syncOrderAlerts = useNotificationStore((state) => state.syncOrderAlerts)
+  const syncReservationAlerts = useNotificationStore((state) => state.syncReservationAlerts)
   const unreadCount = getUnreadAlertCount(alerts)
 
   const handleLogout = async () => {
@@ -112,6 +127,64 @@ export function DashboardLayout() {
     const timer = window.setTimeout(() => setProfileSaved(false), 2600)
     return () => window.clearTimeout(timer)
   }, [profileSaved])
+
+  useEffect(() => {
+    if (!operator?.shop_id) return
+    let ignore = false
+
+    const syncOrders = async () => {
+      try {
+        const orders = await listAdminOrders(operator.shop_id)
+        if (ignore) return
+        syncOrderAlerts(orders.slice(0, 20).map((order) => ({
+          id: `order-${order.id}`,
+          type: 'order',
+          title: getOrderTitle(order),
+          message: `${order.user_full_name ?? '고객'}님이 ${order.items.reduce((count, item) => count + item.quantity, 0)}주를 주문했습니다. · ${order.total_amount.toLocaleString()}원`,
+          severity: 'info',
+          is_read: false,
+        })))
+      } catch {
+        // 주문 알림을 불러오지 못해도 다른 운영 기능은 계속 사용할 수 있습니다.
+      }
+    }
+
+    void syncOrders()
+    const intervalId = window.setInterval(() => void syncOrders(), 15_000)
+    return () => {
+      ignore = true
+      window.clearInterval(intervalId)
+    }
+  }, [operator?.shop_id, syncOrderAlerts])
+
+  useEffect(() => {
+    if (!operator?.shop_id) return
+    let ignore = false
+
+    const syncReservations = async () => {
+      try {
+        const reservations = await listAdminReservations({ shopId: operator.shop_id, status: 'reserved' })
+        if (ignore) return
+        syncReservationAlerts(reservations.slice(0, 20).map((reservation) => ({
+          id: `reservation-${reservation.id}`,
+          type: 'reservation',
+          title: `${reservation.program_title} 예약`,
+          message: `${reservation.user_full_name}님이 ${reservation.participant_count}명 예약했습니다.`,
+          severity: 'info',
+          is_read: false,
+        })))
+      } catch {
+        // 예약 알림을 불러오지 못해도 다른 운영 기능은 계속 사용할 수 있습니다.
+      }
+    }
+
+    void syncReservations()
+    const intervalId = window.setInterval(() => void syncReservations(), 15_000)
+    return () => {
+      ignore = true
+      window.clearInterval(intervalId)
+    }
+  }, [operator?.shop_id, syncReservationAlerts])
 
   return (
     <div className="min-h-screen bg-[#f6f6f1]">
@@ -190,7 +263,17 @@ export function DashboardLayout() {
                         <button
                           key={alert.id}
                           type="button"
-                          onClick={() => markAsRead(alert.id)}
+                          onClick={() => {
+                            markAsRead(alert.id)
+                            if (alert.type === 'order') {
+                              setNotificationsOpen(false)
+                              navigate(ROUTES.orders)
+                            }
+                            if (alert.type === 'reservation') {
+                              setNotificationsOpen(false)
+                              navigate(ROUTES.reservations)
+                            }
+                          }}
                           className={`flex w-full items-start gap-3 border-b border-[#e5e9e3] p-4 text-left last:border-b-0 hover:bg-[#f5f8f3] ${
                             alert.is_read ? 'bg-[#fffefa]' : 'bg-rose-50/40'
                           }`}

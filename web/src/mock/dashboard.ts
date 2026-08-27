@@ -87,7 +87,7 @@ export const circularActivities: CircularActivity[] = [
 export const sensors: SensorData[] = [
   { id: 'temperature', name: '온도', value: 24.2, unit: '°C', normalRange: '20–26°C', status: 'normal', updatedAt: '방금 전' },
   { id: 'humidity', name: '습도', value: 68, unit: '%', normalRange: '60–75%', status: 'normal', updatedAt: '방금 전' },
-  { id: 'light', name: '조도', value: 17200, unit: 'lx', normalRange: '15,000–25,000lx', status: 'warning', updatedAt: '1분 전' },
+  { id: 'light', name: '조도', value: 17200, unit: 'lx', normalRange: '', status: 'normal', updatedAt: '1분 전' },
   { id: 'soil', name: '토양수분', value: 42, unit: '%', normalRange: '50–70%', status: 'danger', updatedAt: '방금 전' },
 ]
 

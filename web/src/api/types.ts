@@ -80,6 +80,20 @@ export interface CollectionSummary {
   collection_count: number
 }
 
+export interface CollectionRead {
+  id: number
+  user_id: number
+  weight_kg: number | string
+  saved_co2_kg: number | string
+  reward_points: number
+  memo: string | null
+  image_url: string | null
+  status: 'pending' | 'approved' | 'rejected' | string
+  reviewed_by_admin_id: number | null
+  reviewed_at: string | null
+  created_at: string
+}
+
 export interface SmartFarmDeviceRead {
   id: number
   farm_uid: string
@@ -112,4 +126,49 @@ export interface CollectionRankingItem {
   total_weight_kg: number
   reward_points: number
   contribution_count: number
+}
+
+export interface AdminOrderItemRead {
+  id: number
+  flower_id: number
+  quantity: number
+  unit_price: number
+  line_amount: number
+  flower_name?: string
+}
+
+export interface AdminOrderRead {
+  id: number
+  user_id: number
+  user_email: string
+  user_full_name: string | null
+  total_amount: number
+  status: string
+  created_at: string
+  items: AdminOrderItemRead[]
+}
+
+export interface WorkshopProgramRead {
+  id: number
+  shop_id: number
+  title: string
+  description: string | null
+  materials: string | null
+  starts_at: string
+  duration_minutes: number
+  capacity: number
+  booked_count: number
+  remaining_seats: number
+  price_per_person: number
+}
+
+export interface WorkshopProgramCreate {
+  shop_id: number
+  title: string
+  description?: string | null
+  materials?: string | null
+  starts_at: string
+  duration_minutes: number
+  capacity: number
+  price_per_person: number
 }

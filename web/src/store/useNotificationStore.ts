@@ -34,9 +34,11 @@ function writeStoredAlerts(alerts: AdminAlert[]) {
 interface NotificationState {
   alerts: AdminAlert[]
   setAlerts: (alerts: AdminAlert[]) => void
-  markAsRead: (alertId: number) => void
+  syncOrderAlerts: (alerts: AdminAlert[]) => void
+  syncReservationAlerts: (alerts: AdminAlert[]) => void
+  markAsRead: (alertId: number | string) => void
   markAllAsRead: () => void
-  resolveAlert: (alertId: number, note: string) => void
+  resolveAlert: (alertId: number | string, note: string) => void
   resetAlerts: () => void
 }
 
@@ -60,6 +62,36 @@ export const useNotificationStore = create<NotificationState>((set) => ({
             }
           : incomingAlert
       })
+      writeStoredAlerts(alerts)
+      return { alerts }
+    })
+  },
+  syncOrderAlerts: (incomingAlerts) => {
+    set((state) => {
+      const existingOrderAlerts = state.alerts.filter((alert) => alert.type === 'order')
+      const nonOrderAlerts = state.alerts.filter((alert) => alert.type !== 'order')
+      const alerts = [
+        ...incomingAlerts.map((incomingAlert) => {
+          const previousAlert = existingOrderAlerts.find((alert) => alert.id === incomingAlert.id)
+          return previousAlert ? { ...incomingAlert, is_read: previousAlert.is_read } : incomingAlert
+        }),
+        ...nonOrderAlerts,
+      ]
+      writeStoredAlerts(alerts)
+      return { alerts }
+    })
+  },
+  syncReservationAlerts: (incomingAlerts) => {
+    set((state) => {
+      const existingReservationAlerts = state.alerts.filter((alert) => alert.type === 'reservation')
+      const nonReservationAlerts = state.alerts.filter((alert) => alert.type !== 'reservation')
+      const alerts = [
+        ...incomingAlerts.map((incomingAlert) => {
+          const previousAlert = existingReservationAlerts.find((alert) => alert.id === incomingAlert.id)
+          return previousAlert ? { ...incomingAlert, is_read: previousAlert.is_read } : incomingAlert
+        }),
+        ...nonReservationAlerts,
+      ]
       writeStoredAlerts(alerts)
       return { alerts }
     })

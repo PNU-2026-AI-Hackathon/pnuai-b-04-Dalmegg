@@ -40,7 +40,7 @@
 | 구분 | 주요 내용 |
 | --- | --- |
 | 소비자 앱 | 회원 인증, 꽃 조회·주문, 계란껍질 수거 신청, 꽃꾸 체험 조회·예약, 기여도·리워드 조회 |
-| 관리자 웹 | 관리자 인증, 운영 Dashboard, 센서 최신값·이력 조회, AI 생육 최적화 결과 확인, 꽃 상품·재고 관리, 체험 예약 관리 |
+| 관리자 웹 | 관리자 인증, 운영 Dashboard, 센서 최신값·이력 조회, 꽃 상품·재고·주문 관리, 수거 요청 승인·반려, 체험 프로그램 개설·예약 관리, 운영 알림 |
 | Backend | REST/WebSocket API, JWT 권한 관리, 주문·예약·수거·리워드 도메인, MQTT 센서 데이터 처리, AI 생육 학습 Prototype API |
 | MiniFarm 연동 | MQTT 센서 Telemetry 수신 → Database 저장 → 관리자 웹 조회 |
 
@@ -189,28 +189,38 @@ flowchart LR
 
 ### 3.2 관리자 웹
 
-관리자 웹은 MiniFarm 운영자가 운영 데이터를 확인하고 상품·예약을 관리하는 서비스입니다.
+관리자 웹은 MiniFarm 운영자가 재배 환경과 판매·체험 업무를 한 화면에서 관리하는 서비스입니다. 모든 시간 표시는 한국 표준시(KST, `Asia/Seoul`) 기준으로 통일했습니다.
 
-- Dashboard 및 센서 최신값·이력 Chart 조회
-- AI 생육 최적화 기반 추천 기준값과 하드웨어 제어 판단 표시
-- 꽃 상품 CRUD, 이미지 Upload, 재고 조정
-- 체험 예약 검색·조회·상태 변경
-- Access Token 자동 첨부 및 401 응답 시 Refresh Token 갱신
+| 메뉴 | 구현 기능 |
+| --- | --- |
+| Dashboard | 센서 현재값, 재고·예약 현황, 확인이 필요한 운영 알림을 표시합니다. 미조치 알림은 처음 3건만 표시하고 `더보기`로 전체를 확인하며, 조치 완료를 바로 처리할 수 있습니다. |
+| 센서 모니터링 | 온도·습도·조도·토양 수분의 최신값과 24시간 이력을 조회합니다. 조도는 센서 측정값을 표시하되 고정 정상 범위 비교에서 제외했습니다. |
+| 꽃 재고 관리 | 꽃 상품 CRUD, 이미지 업로드, 재고 조정을 지원합니다. |
+| 주문 관리 | 주문 고객·품목·금액·접수 시각을 조회합니다. API의 `flower_name`으로 실제 꽃 이름을 표시하며, `수령 대기`와 `수령 완료` 탭을 분리하고 탭별 20건 단위 페이지네이션을 제공합니다. |
+| 수거 요청 관리 | 앱에서 접수된 계란껍질 수거 요청의 장소·메모·첨부 사진을 상세 확인하고 승인 또는 반려합니다. 목록에서는 사진을 노출하지 않습니다. |
+| 체험 예약 관리 | 체험 프로그램을 개설하고, 프로그램별 예약 현황·신청자·예약 상태를 조회·관리합니다. |
+| 운영 알림 | 새 꽃 주문과 체험 예약을 주기적으로 확인해 상단 알림과 Dashboard 운영 알림에 표시합니다. 주문 알림은 주문 관리 화면, 예약 알림은 체험 예약 관리 화면으로 연결됩니다. |
 
-주요 경로는 `/dashboard`, `/sensors`, `/flowers`, `/reservations`입니다.
+주요 경로는 `/dashboard`, `/sensors`, `/flowers`, `/orders`, `/collections`, `/reservations`입니다.
 
 #### 운영자 이상 대응 흐름
 
 ```mermaid
 flowchart LR
-  A[센서값 수신] --> B{설정 범위 이탈 여부}
-  B -->|정상| C[Dashboard 정상 상태 표시]
-  B -->|이상| D[우선 조치 알림]
-  D --> E[조치 방법 안내]
-  E --> F[조치 완료 내용 입력]
+  A[센서·주문·예약 데이터 수신] --> B{운영 확인 필요 여부}
+  B -->|정상| C[Dashboard 현황 표시]
+  B -->|확인 필요| D[운영 알림 생성]
+  D --> E{알림 유형}
+  E -->|센서| F[센서 모니터링]
+  E -->|재고| G[꽃 재고 관리]
+  E -->|주문| H[주문 관리]
+  E -->|예약| I[체험 예약 관리]
+  F --> J[조치 완료]
+  G --> J
+  H --> J
+  I --> J
 ```
 
-조치 완료 상태와 내용은 Web Browser Local Storage에 저장됩니다.
 
 ### 3.3 Backend 및 IoT 연동
 
@@ -227,10 +237,10 @@ Backend는 사용자 앱, 관리자 웹, Database, MiniFarm 센서를 연결합�
 | --- | --- |
 | `/api/auth`, `/api/admin/auth` | 사용자·관리자 인증과 Token 갱신 |
 | `/api/shops`, `/api/flowers` | 꽃집, 꽃 상품, 이미지, 재고 |
-| `/api/orders`, `/api/admin/orders` | 일반 주문과 관리자 주문 조회 |
-| `/api/programs`, `/api/reservations` | 꽃꾸 프로그램과 예약 |
+| `/api/orders`, `/api/admin/orders` | 일반 주문과 관리자 주문 조회. 관리자 주문 응답의 품목에는 `flower_name`을 포함해 실제 꽃 이름을 표시 |
+| `/api/programs`, `/api/reservations` | 꽃꾸 프로그램 개설·조회와 예약 조회·상태 관리 |
 | `/api/bouquet-orders`, `/api/chat` | 맞춤 부케, 사용자·관리자 1:1 채팅 REST/WebSocket |
-| `/api/eco`, `/api/collections` | 계란껍질 수거, 기여도, 리워드 |
+| `/api/eco`, `/api/collections` | 계란껍질 수거, 기여도, 리워드. 관리자는 대기 요청 조회 후 승인·반려 처리 |
 | `/api/dashboard`, `/api/admin/sensors` | 운영 Dashboard, 센서 Device·최신값·이력 조회 |
 
 #### 센서 수집·조회 규칙
@@ -293,7 +303,7 @@ AI는 개발자의 의사결정을 대체하지 않고, UI/UX 초안, 코드 분
 | 소비자 앱 | `flutter test -j 1` | **8 passed** |
 | 소비자 앱 | Android Debug APK Build | 통과 |
 
-`pytest`의 Skip 1건은 실제 MySQL 연결이 불가능한 경우 건너뛰도록 작성된 Database 연결 테스트입니다. Web은 정적 검사·Production Build와 주요 화면의 수동 동선 점검으로 검증했습니다.
+`pytest`의 Skip 1건은 실제 MySQL 연결이 불가능한 경우 건너뛰도록 작성된 Database 연결 테스트입니다. Web은 정적 검사·Production Build와 주요 화면의 수동 동선 점검으로 검증했습니다. 최근 관리자 웹 변경 후에도 `npm run typecheck`, `npm run build`를 재실행해 통과를 확인했습니다.
 
 ### 3.7 프로토타입 시연 범위
 
