@@ -1512,7 +1512,21 @@ MiniFarm Sensor Device
 → `MQTT_ENABLED=true`인 FastAPI Process의 MQTT Listener
 → SmartFarmDevice / SensorLatest / SensorReading 저장
 → Admin Web이 /api/admin/sensors/* 조회
+→ Dashboard가 15초 주기로 최신값을 갱신
 ```
+
+### 장치 제어 및 관리 자동화
+
+배포 Backend는 관리자 자동화 API와 펌프·조명 명령 API를 제공한다. Dashboard는 가장 최근 수신 장치를 제어 대상으로 사용하며, 자동화 ON 시 현재 센서값으로 판단을 즉시 실행하고 이후 새 센서 측정값마다 다시 실행한다.
+
+| 기능 | API | 설명 |
+|---|---|---|
+| 자동화 상태 조회·설정 | `GET` / `PATCH /api/admin/farms/{farm_uid}/devices/{device_uid}/automation` | AI 추천 기준 기반 자동화 ON/OFF |
+| 자동화 실행 | `POST /api/admin/farms/{farm_uid}/devices/{device_uid}/automation/run` | 현재 센서값으로 즉시 판단·명령 발행 |
+| 펌프 제어 | `POST /api/v1/farms/{farm_uid}/devices/{device_uid}/pump` | `on` / `off` MQTT 명령 발행 |
+| 조명 제어 | `POST /api/v1/farms/{farm_uid}/devices/{device_uid}/led` | `on` / `off` MQTT 명령 발행 |
+
+웹의 ON/OFF 표시는 마지막 성공 명령 상태를 보관해 새로고침 후에도 유지한다. 실제 장치 상태를 보장하려면 MCU가 실행 결과를 telemetry 또는 ACK로 회신해야 한다.
 
 ### 관리자 운영
 
@@ -1531,7 +1545,7 @@ React Admin Web
 - Database, Admin Web, Flutter App, Nginx는 Docker Compose에 포함되지 않는다.
 - Cloud 배포 Manifest, Reverse Proxy 설정, CI/CD Workflow는 Repository에서 확인되지 않는다.
 - Hardware Firmware, 회로도, Pin Assignment는 Repository에 포함되지 않는다.
-- Sensor 수집 경로는 구현됐지만 Actuator 제어 경로는 없다.
+- 배포 Backend에는 Actuator 제어 API가 있으나, 이 Repository에는 MCU Firmware·실행 결과 ACK 구현이 포함되지 않는다.
 
 ---
 
@@ -1614,8 +1628,8 @@ React Admin Web
 | Backend | MQTT Sensor 수집 / 최신값 / 이력 | ✅ |
 | Backend | Test Suite | ✅ 53 passed / 1 skipped |
 | Web | 관리자 가입 / 로그인 / 꽃집 생성 | ✅ |
-| Web | MiniFarm Dashboard | ✅ 조회 기능 |
-| Web | Sensor 최신값 / 이력 Chart | ✅ 실제 API + Mock Fallback |
+| Web | MiniFarm Dashboard | ✅ 센서 조회·15초 자동 갱신·펌프/조명 제어·관리 자동화 |
+| Web | Sensor 최신값 / 이력 Chart | ✅ 실제 API + Mock Fallback·15초 자동 갱신 |
 | Web | 꽃·이미지·재고 CRUD | ✅ |
 | Web | 체험 예약 조회 / 상태 변경 | ✅ |
 | Web | 주문 / 채팅 / 수거 관리 화면 | 🔵 미구현 |
@@ -1625,7 +1639,7 @@ React Admin Web
 | IoT | Sensor → MQTT → Backend | ✅ Backend 수신부 구현 |
 | IoT | Backend → Web | ✅ Sensor 조회 구현 |
 | Control | 급수 Pump / Relay Firmware | ⚪ Repository에 소스 없음 |
-| Control | Web 기반 급수 제어 | 🔵 미구현 |
+| Control | Web 기반 펌프/조명 제어 | ✅ 배포 Backend API 연동 |
 | AI | ML 생육 모델 | ⚪ 향후 |
 | AI | 에너지 최적화 | ⚪ 향후 |
 
@@ -1636,10 +1650,11 @@ React Admin Web
 App ↔ Backend REST API
 Web ↔ Backend REST API
 Sensor MQTT → Backend 저장 → Web 조회
+Web → Backend → Pump / LED 명령 발행
 
 미구현 또는 실행 검증 필요:
-Web → Backend → Pump 제어
 실제 Hardware Firmware 및 Pin 연결
+MQTT 명령 수신 후 실제 Pump / LED 동작과 ACK 회신
 실제 MySQL을 포함한 전체 Docker / 배포 구성
 ```
 

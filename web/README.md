@@ -5,7 +5,8 @@ MiniFarm 운영자가 센서 상태, 꽃 상품과 재고, 체험 예약을 관�
 ## 주요 기능
 
 - 관리자 회원가입·로그인과 꽃집 생성·수정
-- 운영 Dashboard와 센서 최신값·이력 Chart
+- 운영 Dashboard와 센서 최신값·이력 Chart, 15초 주기 자동 갱신
+- Dashboard의 펌프·조명 수동 ON/OFF 및 AI 기준 관리 자동화 ON/OFF
 - 꽃 상품 CRUD, 이미지 Upload, 재고 조정
 - 체험 예약 검색·조회·상태 변경
 - Access Token 자동 첨부와 401 응답 시 Refresh Token 갱신
@@ -48,6 +49,19 @@ VITE_USE_MOCKS=false
 | `/sensors` | 센서 Monitoring |
 | `/flowers` | 꽃 상품·재고 관리 |
 | `/reservations` | 체험 예약 관리 |
+
+## 농장 장치 제어
+
+Dashboard는 가장 최근에 수신된 센서 장치를 제어 대상으로 선택합니다. 원격 Backend의 아래 API를 사용하며, 자동화 ON 시 현재 센서값에 대한 자동화 판단을 즉시 실행하고 이후 새 센서 측정값마다 다시 실행합니다.
+
+| 기능 | API |
+| --- | --- |
+| 자동화 상태 조회·설정 | `GET` / `PATCH /api/admin/farms/{farm_uid}/devices/{device_uid}/automation` |
+| 자동화 판단 실행 | `POST /api/admin/farms/{farm_uid}/devices/{device_uid}/automation/run` |
+| 펌프 명령 | `POST /api/v1/farms/{farm_uid}/devices/{device_uid}/pump` |
+| 조명 명령 | `POST /api/v1/farms/{farm_uid}/devices/{device_uid}/led` |
+
+수동 명령이 성공하면 Dashboard에는 마지막 성공 명령 상태를 표시하고 브라우저에 보관합니다. 이 표시는 장치가 telemetry로 별도 실행 결과를 보내기 전까지 **마지막 명령 상태**이며, 실제 물리 상태 확인은 장치의 상태 telemetry 또는 ACK가 필요합니다.
 
 ## 검증
 
