@@ -31,6 +31,50 @@ void main() {
     expect(find.text('ESG 꽃꾸 클래스'), findsOneWidget);
   });
 
+  testWidgets('home recommendations open purchase and reservation screens', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const EggBloomApp(useMockRepositories: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('홈'));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byType(CustomScrollView),
+      const Offset(0, -450),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('recommended-flower-1')));
+    await tester.pumpAndSettle();
+    expect(find.byType(MarketDetailScreen), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byType(CustomScrollView).first,
+      const Offset(0, -450),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('recommended-program-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('순환 플라워팜 체험'), findsOneWidget);
+    expect(find.text('예약하기'), findsWidgets);
+
+    await tester.tap(find.text('홈'));
+    await tester.pumpAndSettle();
+    await tester.drag(
+      find.byType(CustomScrollView),
+      const Offset(0, -900),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('recommended-program-1')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('순환 플라워팜 체험'), findsOneWidget);
+    expect(find.text('예약하기'), findsWidgets);
+  });
+
   testWidgets('my page opens order history with product details', (
     WidgetTester tester,
   ) async {
@@ -74,6 +118,7 @@ void main() {
     );
 
     expect(find.text('품절'), findsOneWidget);
+    expect(find.text('선명한 빨간 장미'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.block_rounded));
     expect(added, isFalse);
   });

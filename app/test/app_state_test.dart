@@ -93,6 +93,7 @@ void main() {
       'id': 1,
       'shop_id': 3,
       'name': '레드 장미',
+      'description': '선명한 빨간 장미',
       'price': 4200.0,
       'color': '레드',
       'stock_quantity': 5,
@@ -112,6 +113,7 @@ void main() {
     expect(collection.memo, '깨끗이 세척함');
     expect(flower.price, '4,200원');
     expect(flower.emoji, '🌹');
+    expect(flower.description, '선명한 빨간 장미');
     expect(user.accumulatedEggshellGrams, 320);
     expect(user.fullName, '사용자');
   });

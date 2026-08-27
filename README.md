@@ -290,7 +290,7 @@ AI는 개발자의 의사결정을 대체하지 않고, UI/UX 초안, 코드 분
 | 관리자 웹 | `npm run lint` | 통과 |
 | 관리자 웹 | `npm run build` | 통과 |
 | 소비자 앱 | `flutter analyze` | 통과 |
-| 소비자 앱 | `flutter test -j 1` | **8 passed** |
+| 소비자 앱 | `flutter test -j 1` | **9 passed** |
 | 소비자 앱 | Android Debug APK Build | 통과 |
 
 `pytest`의 Skip 1건은 실제 MySQL 연결이 불가능한 경우 건너뛰도록 작성된 Database 연결 테스트입니다. Web은 정적 검사·Production Build와 주요 화면의 수동 동선 점검으로 검증했습니다.

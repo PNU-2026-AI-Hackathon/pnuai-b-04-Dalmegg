@@ -657,6 +657,19 @@ class FlowerProductCard extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  if (product.description.trim().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      product.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.muted,
+                        fontSize: 11,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 5),
                   Text(
                     product.price,

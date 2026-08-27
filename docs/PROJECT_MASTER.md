@@ -509,7 +509,7 @@ app/lib/
 
 - `app/test/app_state_test.dart`: 부분 API 실패 대응, Model 변환, 예약 취소, 주문 상태 테스트
 - `app/test/widget_test.dart`: Home, 꽃마켓·체험, 주문 내역, 품절 상태 Widget 테스트
-- 2026-08-27 기준 `flutter analyze` 통과, Flutter Test 8개 통과, Android Debug APK Build 성공을 확인했다.
+- 2026-08-27 기준 `flutter analyze` 통과, Flutter Test 9개 통과, Android Debug APK Build 성공을 확인했다.
 - Android 실기기에서 외부 Server 로그인, 꽃마켓 조회·주문 흐름을 수동 확인했다.
 - Android Manifest에 Internet 권한과 개발 Server HTTP 통신 허용이 반영돼 있다. 운영 배포 전 HTTPS 전환이 필요하다.
 
@@ -1600,7 +1600,7 @@ React Admin Web
 | App | 마이페이지 기여도·리워드·예약 표시 | ✅ 코드 구현 |
 | App | Token 보안 저장 / 로그인 유지 | ✅ Keychain / Keystore 기반 |
 | App | 채팅 / 맞춤 부케 / 리뷰 / 즐겨찾기 | 🔵 미연동 |
-| App | Flutter Analyze / Test / Android Build | ✅ Analyze 통과·Test 8개·Debug APK Build |
+| App | Flutter Analyze / Test / Android Build | ✅ Analyze 통과·Test 9개·Debug APK Build |
 | Backend | 회원가입 / 로그인 | ✅ |
 | Backend | 사용자 / 관리자 권한 | ✅ |
 | Backend | 꽃집 관리 | ✅ |
@@ -2389,7 +2389,7 @@ flutter test -j 1
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
-Android Emulator에서 Host의 `localhost:8000`은 `10.0.2.2:8000`으로 접근한다. 실기기에서는 접근 가능한 Server Origin을 `API_BASE_URL`로 지정한다. 2026-08-27에 Flutter Analyze, Test 8개, Android Debug APK Build와 외부 Server 실기기 핵심 흐름을 확인했다.
+Android Emulator에서 Host의 `localhost:8000`은 `10.0.2.2:8000`으로 접근한다. 실기기에서는 접근 가능한 Server Origin을 `API_BASE_URL`로 지정한다. 2026-08-27에 Flutter Analyze, Test 9개, Android Debug APK Build와 외부 Server 실기기 핵심 흐름을 확인했다.
 
 ---
 
